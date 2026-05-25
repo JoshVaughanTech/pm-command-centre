@@ -8,6 +8,7 @@ import { TLIcon } from './icons';
 import { ProjectModal } from './ProjectModal';
 import { RiskModal } from './RiskModal';
 import { WorkspaceModal } from './WorkspaceModal';
+import { IntegrationModal } from './IntegrationModal';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -522,6 +523,7 @@ export default function ConsoleApp() {
   const [editingProject, setEditingProject] = useState<ProjectRecord | null>(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
   const [workspaces, setWorkspaces] = useState<Array<{ id: string; name: string; slug: string; role: string; projectCount: number; members: Array<{ id: string; name: string; email: string; role: string }> }>>([]);
   const [generatingMoves, setGeneratingMoves] = useState(false);
 
@@ -721,6 +723,7 @@ export default function ConsoleApp() {
         onGenerateMoves={generateMoves}
         generatingMoves={generatingMoves}
         onWorkspaces={() => setShowWorkspaceModal(true)}
+        onImport={() => setShowIntegrationModal(true)}
         userName={session?.user?.name || ''}
         hasProjects={projects.length > 0}
         workspaceName={workspaces.length > 0 ? workspaces[0].name : ''}
@@ -821,6 +824,13 @@ export default function ConsoleApp() {
           onRefresh={fetchData}
         />
       )}
+      {showIntegrationModal && (
+        <IntegrationModal
+          onClose={() => setShowIntegrationModal(false)}
+          onImported={fetchData}
+          workspaceId={workspaces[0]?.id}
+        />
+      )}
     </div>
   );
 }
@@ -829,7 +839,7 @@ export default function ConsoleApp() {
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
   theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves,
-  onWorkspaces, userName, hasProjects, workspaceName,
+  onWorkspaces, onImport, userName, hasProjects, workspaceName,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -845,6 +855,7 @@ function ConsoleTopBar({
   onGenerateMoves: () => void;
   generatingMoves: boolean;
   onWorkspaces: () => void;
+  onImport: () => void;
   userName: string;
   hasProjects: boolean;
   workspaceName: string;
@@ -877,6 +888,10 @@ function ConsoleTopBar({
             {TLIcon.plus(11)}<span>log risk</span>
           </button>
         )}
+        <button className="console-tbtn" onClick={onImport}>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M2 10h8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span>import</span>
+        </button>
         {hasProjects && (
           <button className="console-tbtn" onClick={onGenerateMoves} disabled={generatingMoves}>
             {TLIcon.spark(11)}<span>{generatingMoves ? 'generating...' : 'AI moves'}</span>

@@ -9,15 +9,30 @@ datasource db {
 }
 
 model User {
-  id           String              @id @default(cuid())
-  name         String
-  email        String              @unique
-  passwordHash String
-  projects     Project[]
-  risks        Risk[]
-  memberships  WorkspaceMember[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id            String              @id @default(cuid())
+  name          String
+  email         String              @unique
+  passwordHash  String
+  projects      Project[]
+  risks         Risk[]
+  memberships   WorkspaceMember[]
+  integrations  Integration[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+model Integration {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  String
+  token     String
+  settings  String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
 }
 
 model Workspace {
