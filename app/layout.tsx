@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
-  title: 'Throughline Console',
+  title: 'SNTRI',
   description: 'PM command centre — manage projects, risks, and client communications.',
 };
 

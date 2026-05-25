@@ -44,10 +44,10 @@ type PanelDefinition = {
   Component: ComponentType<PanelProps>;
 };
 
-const STORAGE_LAYOUT = 'throughline.console.layout.v1';
-const STORAGE_PINNED = 'throughline.console.pinned.v1';
-const STORAGE_THEME = 'throughline.console.theme.v1';
-const STORAGE_DENSITY = 'throughline.console.density.v1';
+const STORAGE_LAYOUT = 'sntri.console.layout.v1';
+const STORAGE_PINNED = 'sntri.console.pinned.v1';
+const STORAGE_THEME = 'sntri.console.theme.v1';
+const STORAGE_DENSITY = 'sntri.console.density.v1';
 
 const DEFAULT_LAYOUT: LayoutItem[] = [
   { id: 'daybook', w: 12 },
@@ -83,7 +83,7 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
 
       let lede = '';
       if (projects.length === 0) {
-        lede = 'Welcome to Throughline. Add your first project to get started.';
+        lede = 'Welcome to SNTRI. Add your first project to get started.';
       } else {
         const parts: string[] = [];
         if (lowHealth > 0) parts.push(`${lowHealth} project${lowHealth > 1 ? 's' : ''} need${lowHealth === 1 ? 's' : ''} attention`);
@@ -935,8 +935,8 @@ function ConsoleTopBar({
     <header className="console-top">
       <div className="console-top-l">
         <div className="console-brand">
-          <span className="console-brand-mark">T/L</span>
-          <span className="console-brand-name">throughline</span>
+          <span className="console-brand-mark">SNTRI</span>
+          <span className="console-brand-name">sntri</span>
         </div>
         <span className="console-top-sep" />
         <div className="console-breadcrumb">

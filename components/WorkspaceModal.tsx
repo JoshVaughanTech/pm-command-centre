@@ -176,7 +176,7 @@ export function WorkspaceModal({ workspaces, onClose, onRefresh }: WorkspaceModa
                 <span>Email address</span>
                 <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="colleague@company.com" required />
               </label>
-              <p className="cp-empty-sub" style={{ margin: '8px 0 0', textAlign: 'left' }}>They must have a Throughline account already.</p>
+              <p className="cp-empty-sub" style={{ margin: '8px 0 0', textAlign: 'left' }}>They must have a SNTRI account already.</p>
               <div className="modal-actions" style={{ borderTop: 0, paddingTop: 8 }}>
                 <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>
                   {saving ? 'Inviting...' : 'Send invite'}

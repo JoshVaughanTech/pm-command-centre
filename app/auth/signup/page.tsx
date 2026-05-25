@@ -50,8 +50,8 @@ export default function SignUp() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <span className="console-brand-mark">T/L</span>
-          <span className="console-brand-name">throughline</span>
+          <span className="console-brand-mark">SNTRI</span>
+          <span className="console-brand-name">sntri</span>
         </div>
         <h1 className="auth-title">Create account</h1>
         <form onSubmit={handleSubmit} className="auth-form">

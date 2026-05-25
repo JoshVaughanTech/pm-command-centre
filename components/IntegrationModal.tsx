@@ -14,7 +14,7 @@ const PROVIDERS: Array<{ id: Provider; label: string; desc: string; oauth: boole
   { id: 'csv', label: 'MS Project / CSV', desc: 'Upload a CSV export from any tool', oauth: false },
 ];
 
-const THROUGHLINE_FIELDS = [
+const SNTRI_FIELDS = [
   { key: 'name', label: 'Project name', required: true },
   { key: 'code', label: 'Project code', required: false },
   { key: 'client', label: 'Client', required: false },
@@ -275,14 +275,14 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
           {step === 'mapping' && (
             <>
               <p style={{ fontSize: 12.5, color: 'var(--tl-text-2)', margin: '0 0 4px' }}>
-                Map columns to Throughline fields. {totalRows} rows will be imported as projects.
+                Map columns to SNTRI fields. {totalRows} rows will be imported as projects.
               </p>
               <p style={{ fontSize: 11, color: 'var(--tl-text-4)', margin: '0 0 14px' }}>
                 Auto-mapped where possible. Adjust as needed.
               </p>
 
               <div className="int-mapping">
-                {THROUGHLINE_FIELDS.map((field) => (
+                {SNTRI_FIELDS.map((field) => (
                   <div key={field.key} className="int-map-row">
                     <span className="int-map-label">
                       {field.label}
@@ -343,7 +343,7 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
               <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--tl-text)' }}>
                 {importedCount} project{importedCount !== 1 ? 's' : ''} imported from {providerLabel}
               </p>
-              <p>Your data is now in Throughline. Hit &ldquo;AI moves&rdquo; to generate recommendations.</p>
+              <p>Your data is now in SNTRI. Hit &ldquo;AI moves&rdquo; to generate recommendations.</p>
               <button className="cp-btn cp-btn--primary" onClick={onClose} style={{ marginTop: 8 }}>Done</button>
             </div>
           )}

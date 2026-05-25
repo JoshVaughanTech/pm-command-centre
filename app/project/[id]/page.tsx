@@ -80,7 +80,7 @@ export default function ProjectDetailPage() {
           </button>
           <span className="console-top-sep" />
           <div className="console-brand">
-            <span className="console-brand-mark">T/L</span>
+            <span className="console-brand-mark">SNTRI</span>
           </div>
           <div className="console-breadcrumb">
             <span className="console-bc-key">project</span>
