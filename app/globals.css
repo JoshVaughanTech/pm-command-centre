@@ -1952,6 +1952,24 @@ main {
   border-radius: 5px;
 }
 
+/* ── email connect buttons ───────────────────────────────────── */
+.cp-email-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cp-email-btn {
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 12px;
+  text-decoration: none;
+}
+
 .int-providers {
   display: grid;
   grid-template-columns: 1fr 1fr;
