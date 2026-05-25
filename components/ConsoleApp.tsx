@@ -7,6 +7,7 @@ import { PanelShell } from './PanelShell';
 import { TLIcon } from './icons';
 import { ProjectModal } from './ProjectModal';
 import { RiskModal } from './RiskModal';
+import { WorkspaceModal } from './WorkspaceModal';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -520,14 +521,17 @@ export default function ConsoleApp() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectRecord | null>(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Array<{ id: string; name: string; slug: string; role: string; projectCount: number; members: Array<{ id: string; name: string; email: string; role: string }> }>>([]);
   const [generatingMoves, setGeneratingMoves] = useState(false);
 
   // ── fetch data ───────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     try {
-      const [projRes, riskRes] = await Promise.all([
+      const [projRes, riskRes, wsRes] = await Promise.all([
         fetch('/api/projects'),
         fetch('/api/risks'),
+        fetch('/api/workspaces'),
       ]);
       if (projRes.ok) {
         const p = await projRes.json();
@@ -535,6 +539,7 @@ export default function ConsoleApp() {
         if (p.length > 0 && !pinnedId) setPinnedId(p[0].id);
       }
       if (riskRes.ok) setRisks(await riskRes.json());
+      if (wsRes.ok) setWorkspaces(await wsRes.json());
     } catch {
       // API not available (no database connected)
     }
@@ -715,8 +720,10 @@ export default function ConsoleApp() {
         onSignOut={() => signOut()}
         onGenerateMoves={generateMoves}
         generatingMoves={generatingMoves}
+        onWorkspaces={() => setShowWorkspaceModal(true)}
         userName={session?.user?.name || ''}
         hasProjects={projects.length > 0}
+        workspaceName={workspaces.length > 0 ? workspaces[0].name : ''}
       />
 
       <div className="console-grid">
@@ -807,6 +814,13 @@ export default function ConsoleApp() {
           onClose={() => setShowRiskModal(false)}
         />
       )}
+      {showWorkspaceModal && (
+        <WorkspaceModal
+          workspaces={workspaces}
+          onClose={() => setShowWorkspaceModal(false)}
+          onRefresh={fetchData}
+        />
+      )}
     </div>
   );
 }
@@ -814,7 +828,8 @@ export default function ConsoleApp() {
 // ── Top Bar ────────────────────────────────────────────────────────────────
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
-  theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves, userName, hasProjects,
+  theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves,
+  onWorkspaces, userName, hasProjects, workspaceName,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -829,8 +844,10 @@ function ConsoleTopBar({
   onSignOut: () => void;
   onGenerateMoves: () => void;
   generatingMoves: boolean;
+  onWorkspaces: () => void;
   userName: string;
   hasProjects: boolean;
+  workspaceName: string;
 }) {
   return (
     <header className="console-top">
@@ -841,6 +858,12 @@ function ConsoleTopBar({
         </div>
         <span className="console-top-sep" />
         <div className="console-breadcrumb">
+          {workspaceName && (
+            <>
+              <span className="console-bc-key">team</span>
+              <span className="console-bc-val">{workspaceName}</span>
+            </>
+          )}
           <span className="console-bc-key">pm</span>
           <span className="console-bc-val">{userName || 'console'}</span>
         </div>
@@ -882,6 +905,10 @@ function ConsoleTopBar({
             </div>
           )}
         </div>
+        <button className="console-tbtn" onClick={onWorkspaces} title="Workspaces">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="4" cy="4" r="2" stroke="currentColor" strokeWidth="1.1" /><circle cx="8.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.1" /><circle cx="6.25" cy="8" r="2" stroke="currentColor" strokeWidth="1.1" /></svg>
+          <span>team</span>
+        </button>
         <button className="console-tbtn" onClick={onReset} title="Reset layout">{TLIcon.refresh(12)}</button>
         <button
           className="console-tbtn console-theme-toggle"

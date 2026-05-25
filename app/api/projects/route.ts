@@ -53,15 +53,44 @@ function mapProject(p: {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const projects = await prisma.project.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'asc' },
-  });
+  const { searchParams } = new URL(req.url);
+  const workspaceId = searchParams.get('workspaceId');
+
+  let projects;
+  if (workspaceId) {
+    // Verify user is a member of this workspace
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId, workspaceId },
+    });
+    if (!membership) return NextResponse.json({ error: 'Not a member' }, { status: 403 });
+
+    projects = await prisma.project.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'asc' },
+    });
+  } else {
+    // Show user's own projects (no workspace) + all workspace projects they have access to
+    const memberships = await prisma.workspaceMember.findMany({
+      where: { userId },
+      select: { workspaceId: true },
+    });
+    const workspaceIds = memberships.map((m) => m.workspaceId);
+
+    projects = await prisma.project.findMany({
+      where: {
+        OR: [
+          { userId, workspaceId: null },
+          ...(workspaceIds.length > 0 ? [{ workspaceId: { in: workspaceIds } }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
 
   return NextResponse.json(projects.map(mapProject));
 }
@@ -73,9 +102,18 @@ export async function POST(req: Request) {
   const userId = (session.user as { id: string }).id;
   const body = await req.json();
 
+  // If workspaceId provided, verify membership
+  if (body.workspaceId) {
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId, workspaceId: body.workspaceId },
+    });
+    if (!membership) return NextResponse.json({ error: 'Not a member of this workspace' }, { status: 403 });
+  }
+
   const project = await prisma.project.create({
     data: {
       userId,
+      workspaceId: body.workspaceId || null,
       code: body.code,
       name: body.name,
       client: body.client,

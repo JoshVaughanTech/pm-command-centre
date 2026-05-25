@@ -1814,3 +1814,62 @@ main {
   color: var(--tl-text-2);
   line-height: 1.5;
 }
+
+/* ── workspace modal ────────────────────────────────────────── */
+.ws-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-item {
+  border: 1px solid var(--tl-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ws-item-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tl-line-2);
+}
+
+.ws-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.ws-item-meta {
+  font-size: 11px;
+  color: var(--tl-text-3);
+}
+
+.ws-members {
+  padding: 4px 0;
+}
+
+.ws-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.ws-member-name {
+  font-weight: 500;
+}
+
+.ws-member-email {
+  color: var(--tl-text-3);
+  font-size: 11px;
+}
+
+.ws-member-role {
+  margin-left: auto;
+  font-family: var(--tl-mono);
+  font-size: 10px;
+  color: var(--tl-text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
