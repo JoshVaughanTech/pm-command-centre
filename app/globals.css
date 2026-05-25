@@ -1951,3 +1951,33 @@ main {
   border: 1px solid var(--tl-line);
   border-radius: 5px;
 }
+
+.int-providers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.int-provider-item {
+  padding: 14px 12px;
+  border: 1px solid var(--tl-line);
+  border-radius: 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.int-provider-item:hover {
+  background: var(--tl-surface-alt);
+  border-color: var(--tl-ink);
+}
+
+.int-provider-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.int-provider-desc {
+  font-size: 11px;
+  color: var(--tl-text-3);
+}
