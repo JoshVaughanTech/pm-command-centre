@@ -7,11 +7,11 @@ type Column = { id: number; title: string; type: string };
 
 type Provider = 'smartsheet' | 'asana' | 'monday' | 'csv';
 
-const PROVIDERS: Array<{ id: Provider; label: string; desc: string; tokenHint: string }> = [
-  { id: 'smartsheet', label: 'Smartsheet', desc: 'Import from Smartsheet sheets', tokenHint: 'Account → Personal Settings → API Access' },
-  { id: 'asana', label: 'Asana', desc: 'Import from Asana projects', tokenHint: 'Developer Console → Personal Access Token' },
-  { id: 'monday', label: 'Monday.com', desc: 'Import from Monday boards', tokenHint: 'Developer → My Access Tokens' },
-  { id: 'csv', label: 'MS Project / CSV', desc: 'Upload a CSV export from MS Project or any tool', tokenHint: '' },
+const PROVIDERS: Array<{ id: Provider; label: string; desc: string; oauth: boolean }> = [
+  { id: 'smartsheet', label: 'Smartsheet', desc: 'Connect and import from Smartsheet', oauth: true },
+  { id: 'asana', label: 'Asana', desc: 'Connect and import from Asana', oauth: true },
+  { id: 'monday', label: 'Monday.com', desc: 'Connect and import from Monday', oauth: true },
+  { id: 'csv', label: 'MS Project / CSV', desc: 'Upload a CSV export from any tool', oauth: false },
 ];
 
 const THROUGHLINE_FIELDS = [
@@ -37,7 +37,6 @@ type IntegrationModalProps = {
 export function IntegrationModal({ onClose, onImported, workspaceId }: IntegrationModalProps) {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [step, setStep] = useState<'provider' | 'connect' | 'sheets' | 'mapping' | 'done'>('provider');
-  const [token, setToken] = useState('');
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<number | string | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
@@ -87,24 +86,6 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
     setLoading(false);
   }
 
-  async function handleConnect(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const res = await fetch(`/api/integrations/${provider}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'connect', token }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
-      await checkConnection(provider!);
-    } else {
-      setError(data.error || 'Failed to connect');
-    }
-  }
-
   async function handleDisconnect() {
     await fetch(`/api/integrations/${provider}`, {
       method: 'POST',
@@ -113,7 +94,6 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
     });
     setSheets([]);
     setStep('connect');
-    setToken('');
   }
 
   async function handleSelectSheet(sheetId: number | string) {
@@ -248,27 +228,21 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
           )}
 
           {step === 'connect' && provider !== 'csv' && (
-            <form onSubmit={handleConnect}>
+            <div>
               <p style={{ fontSize: 12.5, color: 'var(--tl-text-2)', margin: '0 0 14px' }}>
-                Enter your {providerLabel} API token. Find it at <strong>{PROVIDERS.find((p) => p.id === provider)?.tokenHint}</strong>.
+                Click below to connect your {providerLabel} account. You&apos;ll be redirected to {providerLabel} to authorise access.
               </p>
-              <label className="modal-field">
-                <span>API token</span>
-                <input
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={`Paste your ${providerLabel} API token`}
-                  required
-                />
-              </label>
-              <div className="modal-actions">
-                <button type="button" className="cp-btn cp-btn--ghost" onClick={() => { setProvider(null); setStep('provider'); }}>back</button>
-                <button type="submit" className="cp-btn cp-btn--primary" disabled={loading}>
-                  {loading ? 'Connecting...' : 'Connect'}
-                </button>
-              </div>
-            </form>
+              <a
+                href={`/api/integrations/${provider}/connect`}
+                className="cp-btn cp-btn--primary cp-email-btn"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px', textDecoration: 'none' }}
+              >
+                Connect {providerLabel}
+              </a>
+              <button className="cp-btn cp-btn--ghost" onClick={() => { setProvider(null); setStep('provider'); }} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
+                back
+              </button>
+            </div>
           )}
 
           {/* ── Sheet / board list ──────────────────────── */}
