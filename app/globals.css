@@ -1436,3 +1436,246 @@ main {
   align-items: center;
   justify-content: center;
 }
+
+/* ── loading state ──────────────────────────────────────────── */
+.cp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: var(--tl-mono);
+  font-size: 13px;
+  color: var(--tl-text-3);
+}
+
+/* ── empty states ───────────────────────────────────────────── */
+.cp-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--tl-text-3);
+  font-size: 13px;
+}
+
+.cp-empty p {
+  margin: 0 0 12px;
+}
+
+.cp-empty-sub {
+  font-size: 11.5px;
+  color: var(--tl-text-4);
+}
+
+.cp-empty .cp-btn {
+  margin-top: 4px;
+}
+
+/* ── auth pages ─────────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-bg);
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 0 0 20px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-3);
+  text-transform: lowercase;
+}
+
+.auth-input {
+  padding: 8px 10px;
+  border: 1px solid var(--tl-line);
+  border-radius: 5px;
+  background: var(--tl-bg);
+  font-size: 13px;
+  font-family: var(--tl-sans);
+  color: var(--tl-text);
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: var(--tl-ink);
+}
+
+.auth-error {
+  font-size: 12px;
+  color: var(--tl-bad);
+  padding: 6px 0;
+}
+
+.auth-submit {
+  padding: 9px 16px;
+  background: var(--tl-ink);
+  color: var(--tl-bg);
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.auth-submit:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  font-size: 12.5px;
+  color: var(--tl-text-3);
+  text-align: center;
+  margin: 18px 0 0;
+}
+
+.auth-link {
+  color: var(--tl-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── modal ──────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.console-root--dark .modal-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--tl-line-2);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-3);
+}
+
+.modal-field input,
+.modal-field select {
+  padding: 7px 9px;
+  border: 1px solid var(--tl-line);
+  border-radius: 4px;
+  background: var(--tl-bg);
+  font-size: 12.5px;
+  font-family: var(--tl-sans);
+  color: var(--tl-text);
+  outline: none;
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+  border-color: var(--tl-ink);
+}
+
+.modal-field-row {
+  display: flex;
+  gap: 6px;
+}
+
+.modal-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-field-row select {
+  width: 80px;
+}
+
+.modal-divider {
+  height: 1px;
+  background: var(--tl-line-2);
+  margin: 16px 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tl-line-2);
+}

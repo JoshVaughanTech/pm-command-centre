@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  projects     Project[]
+  risks        Risk[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code          String
+  name          String
+  client        String
+  stage         String   @default("Planning")
+  phase         Int      @default(1)
+  health        Int      @default(100)
+  risk          String   @default("Low")
+  next          String   @default("")
+  nextWhen      String   @default("")
+  budget        String   @default("On track")
+  budgetState   String   @default("good")
+  schedule      String   @default("On track")
+  scheduleState String   @default("good")
+  lastTouch     DateTime @default(now())
+  owner         String   @default("")
+  contact       String   @default("")
+  channel       String   @default("Email")
+  move          String   @default("")
+  moveBody      String   @default("")
+  risks         Risk[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Risk {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  owner     String   @default("")
+  severity  String   @default("med")
+  impact    String   @default("")
+  action    String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
+}

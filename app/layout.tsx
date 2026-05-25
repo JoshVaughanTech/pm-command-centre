@@ -1,9 +1,10 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'Throughline Console',
-  description: 'High-fidelity PM dashboard prototype for Vercel deployment.',
+  description: 'PM command centre — manage projects, risks, and client communications.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

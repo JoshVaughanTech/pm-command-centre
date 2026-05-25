@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
+import { signOut, useSession } from 'next-auth/react';
 import { PanelShell } from './PanelShell';
 import { TLIcon } from './icons';
-import { TL_INBOX, TL_PORTFOLIO, TL_PROJECTS, TL_RISKS, type PanelId } from '@/lib/console-data';
+import { ProjectModal } from './ProjectModal';
+import { RiskModal } from './RiskModal';
+import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
+import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
 type GridWidth = 4 | 6 | 8 | 12;
 type LayoutItem = { id: PanelId; w: GridWidth };
@@ -14,6 +18,15 @@ type PanelProps = {
   pinnedProjectId: string;
   onPin?: (id: string) => void;
   density: Density;
+  projects: ProjectRecord[];
+  risks: RiskRecord[];
+  portfolio: PortfolioSummary;
+  onAddProject?: () => void;
+  onEditProject?: (id: string) => void;
+  onDeleteProject?: (id: string) => void;
+  onAddRisk?: () => void;
+  onDeleteRisk?: (id: string) => void;
+  userName?: string;
 };
 
 type PanelDefinition = {
@@ -35,30 +48,8 @@ const DEFAULT_LAYOUT: LayoutItem[] = [
   { id: 'pinned', w: 4 },
   { id: 'projects', w: 8 },
   { id: 'risks', w: 4 },
-  { id: 'inbox', w: 8 },
-  { id: 'comms', w: 4 },
+  { id: 'comms', w: 12 },
 ];
-
-// ── Sparkline ──────────────────────────────────────────────────────────────
-function CPSpark({ data }: { data: number[] }) {
-  const w = 56, h = 14, pad = 1;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = Math.max(0.0001, max - min);
-  const pts = data.map((d, i) => {
-    const x = pad + (i / (data.length - 1)) * (w - 2 * pad);
-    const y = h - pad - ((d - min) / range) * (h - 2 * pad);
-    return [x, y] as const;
-  });
-  const path = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-  const last = pts[pts.length - 1];
-  return (
-    <svg width={w} height={h} className="cp-spark">
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx={last[0]} cy={last[1]} r="1.5" fill="currentColor" />
-    </svg>
-  );
-}
 
 // ── Inline Bar ─────────────────────────────────────────────────────────────
 function CPBar({ v }: { v: number }) {
@@ -75,44 +66,56 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Today',
     defaultW: 12,
     allowedW: [12],
-    Component: function DaybookPanel() {
+    Component: function DaybookPanel({ projects, risks, portfolio }) {
+      const now = new Date();
+      const dayName = getDayName(now);
+      const { day, month, year } = getDateDisplay(now);
+      const lowHealth = projects.filter((p) => p.health < 60).length;
+      const quietClients = projects.filter((p) => p.comms < 40).length;
+
+      let lede = '';
+      if (projects.length === 0) {
+        lede = 'Welcome to Throughline. Add your first project to get started.';
+      } else {
+        const parts: string[] = [];
+        if (lowHealth > 0) parts.push(`${lowHealth} project${lowHealth > 1 ? 's' : ''} need${lowHealth === 1 ? 's' : ''} attention`);
+        if (quietClients > 0) parts.push(`${quietClients} client${quietClients > 1 ? 's have' : ' has'} been quiet`);
+        if (risks.filter((r) => r.severity === 'high').length > 0) parts.push(`${risks.filter((r) => r.severity === 'high').length} high-severity risk${risks.filter((r) => r.severity === 'high').length > 1 ? 's' : ''} open`);
+        lede = parts.length > 0 ? parts.join('. ') + '.' : `All ${projects.length} projects are tracking well. No urgent actions today.`;
+      }
+
       return (
         <div className="cp-daybook">
           <div className="cp-daybook-l">
-            <div className="cp-daybook-eyebrow">Monday</div>
+            <div className="cp-daybook-eyebrow">{dayName}</div>
             <h1 className="cp-daybook-title">
-              25 May<span className="cp-daybook-year">, 2026</span>
+              {day} {month}<span className="cp-daybook-year">, {year}</span>
             </h1>
-            <p className="cp-daybook-lede">
-              Three projects need a move today. One client has been quiet for a week. Yesterday you closed two risks and shipped the access-control evidence pack.
-            </p>
+            <p className="cp-daybook-lede">{lede}</p>
           </div>
           <div className="cp-daybook-r">
             <div className="cp-ledger">
               <div className="cp-ledger-row">
-                <span className="cp-ledger-num">{TL_PORTFOLIO.active}</span>
+                <span className="cp-ledger-num">{portfolio.active}</span>
                 <span className="cp-ledger-lbl">active projects</span>
               </div>
               <div className="cp-ledger-row">
                 <span className="cp-ledger-num">
-                  {TL_PORTFOLIO.health}
-                  <span className="cp-ledger-unit">%</span>
+                  {portfolio.health}<span className="cp-ledger-unit">%</span>
                 </span>
                 <span className="cp-ledger-lbl">portfolio health</span>
               </div>
               <div className="cp-ledger-row cp-ledger-row--warn">
                 <span className="cp-ledger-num">
-                  {TL_PORTFOLIO.risksHigh}
-                  <span className="cp-ledger-unit">/{TL_PORTFOLIO.risksOpen}</span>
+                  {portfolio.risksHigh}<span className="cp-ledger-unit">/{portfolio.risksOpen}</span>
                 </span>
                 <span className="cp-ledger-lbl">high / open risks</span>
               </div>
               <div className="cp-ledger-row">
                 <span className="cp-ledger-num">
-                  {TL_PORTFOLIO.hoursSaved}
-                  <span className="cp-ledger-unit">h</span>
+                  {portfolio.updatesDue}
                 </span>
-                <span className="cp-ledger-lbl">saved this week</span>
+                <span className="cp-ledger-lbl">comms overdue</span>
               </div>
             </div>
           </div>
@@ -124,14 +127,14 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Portfolio metrics',
     defaultW: 12,
     allowedW: [12, 8, 6],
-    Component: function MetricsPanel() {
+    Component: function MetricsPanel({ portfolio }) {
       const cells = [
-        { lbl: 'portfolio.health', val: TL_PORTFOLIO.health, suf: '%', spark: [62, 68, 71, 65, 69, 70, 70] },
-        { lbl: 'projects.active', val: TL_PORTFOLIO.active, suf: '', spark: [3, 3, 3, 4, 4, 4, 4] },
-        { lbl: 'risks.open', val: TL_PORTFOLIO.risksOpen, suf: '', spark: [2, 3, 3, 4, 5, 4, 4], state: 'warn' },
-        { lbl: 'risks.high', val: TL_PORTFOLIO.risksHigh, suf: '', spark: [0, 1, 1, 2, 2, 2, 2], state: 'bad' },
-        { lbl: 'comms.due', val: TL_PORTFOLIO.updatesDue, suf: '', spark: [1, 1, 2, 2, 2, 2, 2] },
-        { lbl: 'ai.hours_saved', val: TL_PORTFOLIO.hoursSaved, suf: 'h', spark: [4, 5, 6, 7, 8, 9, 9.5], state: 'good' },
+        { lbl: 'portfolio.health', val: portfolio.health, suf: '%', spark: [portfolio.health] },
+        { lbl: 'projects.active', val: portfolio.active, suf: '', spark: [portfolio.active] },
+        { lbl: 'risks.open', val: portfolio.risksOpen, suf: '', spark: [portfolio.risksOpen], state: portfolio.risksOpen > 0 ? 'warn' : '' },
+        { lbl: 'risks.high', val: portfolio.risksHigh, suf: '', spark: [portfolio.risksHigh], state: portfolio.risksHigh > 0 ? 'bad' : '' },
+        { lbl: 'comms.overdue', val: portfolio.updatesDue, suf: '', spark: [portfolio.updatesDue] },
+        { lbl: 'ai.hours_saved', val: portfolio.hoursSaved, suf: 'h', spark: [portfolio.hoursSaved], state: 'good' },
       ];
 
       return (
@@ -144,7 +147,6 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
                   {cell.val}
                   {cell.suf && <span className="cp-stripcell-suf">{cell.suf}</span>}
                 </div>
-                <CPSpark data={cell.spark} />
               </div>
             </div>
           ))}
@@ -156,11 +158,14 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Priority moves',
     defaultW: 8,
     allowedW: [6, 8, 12],
-    Component: function MovesPanel() {
-      const projects = [...TL_PROJECTS].sort((a, b) => a.health - b.health).slice(0, 3);
+    Component: function MovesPanel({ projects }) {
+      const sorted = [...projects].sort((a, b) => a.health - b.health).slice(0, 3);
+      if (sorted.length === 0) {
+        return <div className="cp-empty">Add projects to see priority moves.</div>;
+      }
       return (
         <ol className="cp-moves">
-          {projects.map((project, index) => (
+          {sorted.map((project, index) => (
             <li key={project.id} className="cp-move">
               <div className="cp-move-num">{String(index + 1).padStart(2, '0')}</div>
               <div className="cp-move-body">
@@ -169,15 +174,15 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
                   <span className="cp-move-code">{project.code}</span>
                   <span className="cp-mid-dot" />
                   <span>{project.client}</span>
-                  <span className="cp-mid-dot" />
-                  <span className="cp-move-when">{project.nextWhen}</span>
+                  {project.nextWhen && (
+                    <>
+                      <span className="cp-mid-dot" />
+                      <span className="cp-move-when">{project.nextWhen}</span>
+                    </>
+                  )}
                 </div>
-                <div className="cp-move-h">{project.move}</div>
-                <div className="cp-move-p">{project.moveBody}</div>
-              </div>
-              <div className="cp-move-actions">
-                <button className="cp-btn cp-btn--primary">{TLIcon.send(11)}<span>draft</span></button>
-                <button className="cp-btn cp-btn--ghost">snooze</button>
+                <div className="cp-move-h">{project.move || project.next || `Update ${project.name}`}</div>
+                <div className="cp-move-p">{project.moveBody || `Health is at ${project.health}%. Review and update this project.`}</div>
               </div>
             </li>
           ))}
@@ -189,14 +194,23 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Projects',
     defaultW: 8,
     allowedW: [12, 8],
-    Component: function ProjectsPanel({ pinnedProjectId, onPin }) {
+    Component: function ProjectsPanel({ projects, risks, pinnedProjectId, onPin, onAddProject, onEditProject }) {
       const [sortKey, setSortKey] = useState<'health' | 'comms'>('health');
       const sorted = useMemo(() => {
-        return [...TL_PROJECTS].sort((a, b) => {
+        return [...projects].sort((a, b) => {
           if (sortKey === 'health') return a.health - b.health;
           return a.comms - b.comms;
         });
-      }, [sortKey]);
+      }, [projects, sortKey]);
+
+      if (projects.length === 0) {
+        return (
+          <div className="cp-empty">
+            <p>No projects yet.</p>
+            <button className="cp-btn cp-btn--primary" onClick={onAddProject}>{TLIcon.plus(11)}<span>Add your first project</span></button>
+          </div>
+        );
+      }
 
       return (
         <table className="cp-table">
@@ -217,12 +231,13 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
               </th>
               <th className="cp-th-num">risks</th>
               <th>next</th>
+              <th className="cp-th-tight"></th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((project) => {
-              const riskCount = TL_RISKS.filter((risk) => risk.project === project.code).length;
-              const riskHigh = TL_RISKS.filter((risk) => risk.project === project.code && risk.severity === 'high').length;
+              const riskCount = risks.filter((r) => r.project === project.code).length;
+              const riskHigh = risks.filter((r) => r.project === project.code && r.severity === 'high').length;
 
               return (
                 <tr
@@ -230,15 +245,11 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
                   onClick={() => onPin?.(project.id)}
                   className={project.id === pinnedProjectId ? 'is-sel' : ''}
                 >
-                  <td>
-                    <span className={`cp-rdot cp-rdot--${project.risk.toLowerCase()}`} />
-                  </td>
+                  <td><span className={`cp-rdot cp-rdot--${project.risk.toLowerCase()}`} /></td>
                   <td className="cp-mono">{project.code}</td>
                   <td className="cp-td-name">{project.name}</td>
                   <td>{project.client}</td>
-                  <td>
-                    <span className="cp-stage">{project.stage.toLowerCase()}</span>
-                  </td>
+                  <td><span className="cp-stage">{project.stage.toLowerCase()}</span></td>
                   <td className="cp-td-num">
                     <span className="cp-tnum">{project.health}</span>
                     <CPBar v={project.health} />
@@ -254,8 +265,17 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
                     <span className="cp-rchip">{riskCount}</span>
                   </td>
                   <td className="cp-td-next">
-                    <span className={`cp-next-when ${project.nextWhen === 'Overdue' ? 'cp-next-when--bad' : ''}`}>{project.nextWhen}</span>
+                    {project.nextWhen && <span className={`cp-next-when ${project.nextWhen === 'Overdue' ? 'cp-next-when--bad' : ''}`}>{project.nextWhen}</span>}
                     <span className="cp-next-what">{project.next}</span>
+                  </td>
+                  <td>
+                    <button
+                      className="console-panel-btn"
+                      title="Edit project"
+                      onClick={(e) => { e.stopPropagation(); onEditProject?.(project.id); }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M7.5 1.5l1 1-5.5 5.5H2V7z" stroke="currentColor" strokeWidth="1" /></svg>
+                    </button>
                   </td>
                 </tr>
               );
@@ -269,7 +289,15 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Open risks',
     defaultW: 4,
     allowedW: [4, 6, 8, 12],
-    Component: function RisksPanel() {
+    Component: function RisksPanel({ risks, onAddRisk, onDeleteRisk }) {
+      if (risks.length === 0) {
+        return (
+          <div className="cp-empty">
+            <p>No open risks.</p>
+            <button className="cp-btn" onClick={onAddRisk}>{TLIcon.plus(11)}<span>Log a risk</span></button>
+          </div>
+        );
+      }
       return (
         <table className="cp-table cp-table--tight">
           <thead>
@@ -280,19 +308,25 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
               <th>project</th>
               <th>owner</th>
               <th className="cp-th-num">age</th>
+              <th className="cp-th-tight"></th>
             </tr>
           </thead>
           <tbody>
-            {TL_RISKS.map((risk) => (
+            {risks.map((risk) => (
               <tr key={risk.id}>
-                <td>
-                  <span className={`cp-sev cp-sev--${risk.severity}`}>{risk.severity === 'high' ? 'H' : 'M'}</span>
-                </td>
-                <td className="cp-mono">{risk.id}</td>
+                <td><span className={`cp-sev cp-sev--${risk.severity}`}>{risk.severity === 'high' ? 'H' : 'M'}</span></td>
+                <td className="cp-mono">{risk.id.slice(0, 8)}</td>
                 <td className="cp-td-name">{risk.title}</td>
                 <td className="cp-mono">{risk.project}</td>
                 <td>{risk.owner}</td>
                 <td className="cp-td-num">{risk.age}</td>
+                <td>
+                  <button
+                    className="console-panel-btn"
+                    title="Resolve risk"
+                    onClick={() => onDeleteRisk?.(risk.id)}
+                  >&times;</button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -306,23 +340,10 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     allowedW: [4, 6, 8, 12],
     Component: function InboxPanel() {
       return (
-        <ul className="cp-inbox">
-          {TL_INBOX.map((item, index) => (
-            <li key={`${item.from}-${index}`} className={`cp-inbox-row cp-inbox-row--${item.state}`}>
-              <div className="cp-inbox-state" />
-              <div className="cp-inbox-body">
-                <div className="cp-inbox-line">
-                  <span className="cp-inbox-from">{item.from}</span>
-                  <span className="cp-inbox-org">{item.org}</span>
-                  <span className="cp-inbox-at">{item.at}</span>
-                </div>
-                <div className="cp-inbox-subj">{item.subj}</div>
-                <div className="cp-inbox-snip">{item.snip}</div>
-              </div>
-              <div className="cp-inbox-tag">{item.project}</div>
-            </li>
-          ))}
-        </ul>
+        <div className="cp-empty">
+          <p>Inbox integration coming soon.</p>
+          <p className="cp-empty-sub">Connect your email to see project-linked threads here.</p>
+        </div>
       );
     },
   },
@@ -330,8 +351,11 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Pinned project',
     defaultW: 4,
     allowedW: [4, 6],
-    Component: function PinnedPanel({ pinnedProjectId }) {
-      const selected = TL_PROJECTS.find((project) => project.id === pinnedProjectId) || TL_PROJECTS[0];
+    Component: function PinnedPanel({ projects, pinnedProjectId, onEditProject }) {
+      const selected = projects.find((p) => p.id === pinnedProjectId) || projects[0];
+      if (!selected) {
+        return <div className="cp-empty">Pin a project from the projects table.</div>;
+      }
 
       return (
         <div className="cp-pinned">
@@ -347,45 +371,28 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
             <div className="cp-pinned-sub">{selected.client}</div>
           </div>
           <div className="cp-pinned-kv">
-            <div>
-              <span>owner</span>
-              <b>{selected.owner}</b>
-            </div>
-            <div>
-              <span>contact</span>
-              <b>{selected.contact}</b>
-            </div>
-            <div>
-              <span>channel</span>
-              <b>{selected.channel}</b>
-            </div>
-            <div>
-              <span>next</span>
-              <b>{selected.nextWhen}</b>
-            </div>
-            <div>
-              <span>last touch</span>
-              <b>{selected.lastTouch}</b>
-            </div>
-            <div>
-              <span>phase</span>
-              <b>{selected.phase}/8</b>
-            </div>
+            <div><span>owner</span><b>{selected.owner || '—'}</b></div>
+            <div><span>contact</span><b>{selected.contact || '—'}</b></div>
+            <div><span>channel</span><b>{selected.channel || '—'}</b></div>
+            <div><span>next</span><b>{selected.nextWhen || '—'}</b></div>
+            <div><span>last touch</span><b>{selected.lastTouch}</b></div>
+            <div><span>phase</span><b>{selected.phase}/8</b></div>
           </div>
-          <div className="cp-pinned-block">
-            <div className="cp-pinned-block-head">
-              <span>{TLIcon.spark(11)}</span>
-              <span>recommended move</span>
-            </div>
-            <div className="cp-pinned-move">
-              <div className="cp-pinned-move-h">{selected.move}</div>
-              <div className="cp-pinned-move-p">{selected.moveBody}</div>
-              <div className="cp-pinned-move-actions">
-                <button className="cp-btn cp-btn--primary">{TLIcon.send(11)}<span>draft &amp; send</span></button>
-                <button className="cp-btn cp-btn--ghost">snooze</button>
+          {(selected.move || selected.next) && (
+            <div className="cp-pinned-block">
+              <div className="cp-pinned-block-head">
+                <span>{TLIcon.spark(11)}</span>
+                <span>recommended move</span>
+              </div>
+              <div className="cp-pinned-move">
+                <div className="cp-pinned-move-h">{selected.move || selected.next}</div>
+                <div className="cp-pinned-move-p">{selected.moveBody || `Health is at ${selected.health}%. Review and update.`}</div>
               </div>
             </div>
-          </div>
+          )}
+          <button className="cp-pinned-action" onClick={() => onEditProject?.(selected.id)}>
+            edit project
+          </button>
         </div>
       );
     },
@@ -394,21 +401,29 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Weekly timeline',
     defaultW: 12,
     allowedW: [12],
-    Component: function TimelinePanel() {
+    Component: function TimelinePanel({ projects }) {
+      if (projects.length === 0) {
+        return <div className="cp-empty">Add projects to see the weekly timeline.</div>;
+      }
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
-      const dates = ['25', '26', '27', '28', '29'];
+      const now = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      const dates = Array.from({ length: 5 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return d.getDate().toString();
+      });
 
       return (
         <div className="cp-tl">
           <div className="cp-tl-head">
             {days.map((d, i) => (
-              <div key={d} className="cp-tl-head-cell">
-                {d}<span className="cp-tl-head-date">{dates[i]}</span>
-              </div>
+              <div key={d} className="cp-tl-head-cell">{d}<span className="cp-tl-head-date">{dates[i]}</span></div>
             ))}
           </div>
           <div className="cp-tl-rows">
-            {TL_PROJECTS.map((project) => (
+            {projects.map((project) => (
               <div key={project.id} className="cp-tl-row">
                 <div className="cp-tl-row-label">
                   <span className={`cp-rdot cp-rdot--${project.risk.toLowerCase()}`} />
@@ -417,7 +432,7 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
                 </div>
                 <div className="cp-tl-row-track">
                   {days.map((d, di) => {
-                    const item = project.timeline.find((t) => t.d === d);
+                    const item = project.timeline?.find((t) => t.d === d);
                     return (
                       <div key={di} className="cp-tl-row-cell">
                         {item && (
@@ -439,24 +454,24 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
   comms: {
     title: 'Comms health',
     defaultW: 4,
-    allowedW: [4, 6],
-    Component: function CommsPanel() {
+    allowedW: [4, 6, 12],
+    Component: function CommsPanel({ projects }) {
+      if (projects.length === 0) {
+        return <div className="cp-empty">Add projects to track communication health.</div>;
+      }
       return (
         <ul className="cp-comms">
-          {TL_PROJECTS.map((project) => {
+          {projects.map((project) => {
             const state = project.comms < 50 ? 'bad' : project.comms < 75 ? 'warn' : 'good';
             return (
               <li key={project.id} className="cp-comms-row">
                 <div className="cp-comms-l">
                   <div className="cp-comms-name">{project.client}</div>
-                  <div className="cp-comms-sub">{project.contact} &middot; {project.lastTouch}</div>
+                  <div className="cp-comms-sub">{project.contact || project.owner} &middot; {project.lastTouch}</div>
                 </div>
                 <div className="cp-comms-mid">
                   <div className="cp-comms-bar">
-                    <div
-                      className={`cp-comms-bar-fill cp-comms-bar-fill--${state}`}
-                      style={{ width: `${project.comms}%` }}
-                    />
+                    <div className={`cp-comms-bar-fill cp-comms-bar-fill--${state}`} style={{ width: `${project.comms}%` }} />
                   </div>
                 </div>
                 <div className={`cp-comms-num cp-comms-num--${state}`}>{project.comms}</div>
@@ -482,14 +497,49 @@ function getStoredLayout() {
 }
 
 export default function ConsoleApp() {
+  const { data: session } = useSession();
+
+  // ── data state ───────────────────────────────────────────────
+  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [risks, setRisks] = useState<RiskRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── layout state ─────────────────────────────────────────────
   const [layout, setLayout] = useState<LayoutItem[]>(DEFAULT_LAYOUT);
-  const [pinnedId, setPinnedId] = useState<string>(TL_PROJECTS[0].id);
+  const [pinnedId, setPinnedId] = useState<string>('');
   const [theme, setTheme] = useState<Theme>('light');
   const [density, setDensity] = useState<Density>('compact');
   const [addOpen, setAddOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
+  // ── modal state ──────────────────────────────────────────────
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectRecord | null>(null);
+  const [showRiskModal, setShowRiskModal] = useState(false);
+
+  // ── fetch data ───────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    try {
+      const [projRes, riskRes] = await Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/risks'),
+      ]);
+      if (projRes.ok) {
+        const p = await projRes.json();
+        setProjects(p);
+        if (p.length > 0 && !pinnedId) setPinnedId(p[0].id);
+      }
+      if (riskRes.ok) setRisks(await riskRes.json());
+    } catch {
+      // API not available (no database connected)
+    }
+    setLoading(false);
+  }, [pinnedId]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── restore layout from localStorage ─────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setLayout(getStoredLayout());
@@ -501,31 +551,85 @@ export default function ConsoleApp() {
     if (savedPinned) setPinnedId(savedPinned);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_LAYOUT, JSON.stringify(layout));
-  }, [layout]);
+  useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_LAYOUT, JSON.stringify(layout)); }, [layout]);
+  useEffect(() => { if (typeof window !== 'undefined' && pinnedId) window.localStorage.setItem(STORAGE_PINNED, pinnedId); }, [pinnedId]);
+  useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_THEME, theme); }, [theme]);
+  useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_DENSITY, density); }, [density]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_PINNED, pinnedId);
-  }, [pinnedId]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_THEME, theme);
-  }, [theme]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_DENSITY, density);
-  }, [density]);
+  // ── computed ─────────────────────────────────────────────────
+  const portfolio = useMemo<PortfolioSummary>(() => {
+    const highCount = risks.filter((r) => r.severity === 'high').length;
+    return computePortfolio(projects, risks.length, highCount);
+  }, [projects, risks]);
 
   const availablePanels = useMemo(() => {
     const used = new Set(layout.map((item) => item.id));
     return (Object.keys(PANEL_CATALOG) as PanelId[]).filter((id) => !used.has(id));
   }, [layout]);
 
+  // ── CRUD handlers ────────────────────────────────────────────
+  async function handleSaveProject(data: Record<string, string | number>) {
+    if (editingProject) {
+      const res = await fetch(`/api/projects/${editingProject.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        await fetchData();
+        setEditingProject(null);
+        setShowProjectModal(false);
+      }
+    } else {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const newProject = await res.json();
+        await fetchData();
+        setPinnedId(newProject.id);
+        setShowProjectModal(false);
+      }
+    }
+  }
+
+  async function handleDeleteProject(id: string) {
+    if (!confirm('Delete this project and all its risks?')) return;
+    const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      await fetchData();
+      if (pinnedId === id) setPinnedId(projects[0]?.id || '');
+    }
+  }
+
+  async function handleSaveRisk(data: { projectId: string; title: string; owner: string; severity: string; impact: string; action: string }) {
+    const res = await fetch('/api/risks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      await fetchData();
+      setShowRiskModal(false);
+    }
+  }
+
+  async function handleDeleteRisk(id: string) {
+    const res = await fetch(`/api/risks/${id}`, { method: 'DELETE' });
+    if (res.ok) await fetchData();
+  }
+
+  function openEditProject(id: string) {
+    const p = projects.find((proj) => proj.id === id);
+    if (p) {
+      setEditingProject(p);
+      setShowProjectModal(true);
+    }
+  }
+
+  // ── drag handlers ────────────────────────────────────────────
   const onDragStart = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
     setDraggingId(id);
     event.dataTransfer.effectAllowed = 'move';
@@ -540,11 +644,7 @@ export default function ConsoleApp() {
 
   const onDrop = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    if (!draggingId || draggingId === id) {
-      setDraggingId(null);
-      setOverId(null);
-      return;
-    }
+    if (!draggingId || draggingId === id) { setDraggingId(null); setOverId(null); return; }
     setLayout((current) => {
       const fromIndex = current.findIndex((item) => item.id === draggingId);
       const toIndex = current.findIndex((item) => item.id === id);
@@ -559,41 +659,45 @@ export default function ConsoleApp() {
   };
 
   const onDragLeave = () => setOverId(null);
-  const onDragEnd = () => {
-    setDraggingId(null);
-    setOverId(null);
-  };
+  const onDragEnd = () => { setDraggingId(null); setOverId(null); };
 
   const cycleWidth = (id: string) => {
-    setLayout((current) =>
-      current.map((item) => {
-        if (item.id !== id) return item;
-        const allowed = PANEL_CATALOG[id].allowedW;
-        const index = allowed.indexOf(item.w);
-        const nextWidth = allowed[(index + 1) % allowed.length];
-        return { ...item, w: nextWidth };
-      })
-    );
+    setLayout((current) => current.map((item) => {
+      if (item.id !== id) return item;
+      const allowed = PANEL_CATALOG[id].allowedW;
+      const index = allowed.indexOf(item.w);
+      return { ...item, w: allowed[(index + 1) % allowed.length] };
+    }));
   };
 
   const removePanel = (id: string) => setLayout((current) => current.filter((item) => item.id !== id));
-  const addPanel = (id: PanelId) => {
-    setLayout((current) => [...current, { id, w: PANEL_CATALOG[id].defaultW }]);
-    setAddOpen(false);
-  };
+  const addPanel = (id: PanelId) => { setLayout((current) => [...current, { id, w: PANEL_CATALOG[id].defaultW }]); setAddOpen(false); };
   const resetLayout = () => setLayout(DEFAULT_LAYOUT);
+
+  if (loading) {
+    return (
+      <div className="console-root console-root--light">
+        <div className="cp-loading">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={`console-root console-root--${theme} console-root--d-${density}`}>
       <ConsoleTopBar
         addOpen={addOpen}
-        onAdd={() => setAddOpen((current) => !current)}
+        onAdd={() => setAddOpen((c) => !c)}
         availablePanels={availablePanels}
         onAddPanel={addPanel}
         onCloseAdd={() => setAddOpen(false)}
         onReset={resetLayout}
         theme={theme}
         setTheme={setTheme}
+        onAddProject={() => { setEditingProject(null); setShowProjectModal(true); }}
+        onAddRisk={() => setShowRiskModal(true)}
+        onSignOut={() => signOut()}
+        userName={session?.user?.name || ''}
+        hasProjects={projects.length > 0}
       />
 
       <div className="console-grid">
@@ -620,7 +724,20 @@ export default function ConsoleApp() {
                 onRemove={() => removePanel(item.id)}
                 bodyKind={item.id}
               >
-                <panel.Component pinnedProjectId={pinnedId} onPin={setPinnedId} density={density} />
+                <panel.Component
+                  pinnedProjectId={pinnedId}
+                  onPin={setPinnedId}
+                  density={density}
+                  projects={projects}
+                  risks={risks}
+                  portfolio={portfolio}
+                  onAddProject={() => { setEditingProject(null); setShowProjectModal(true); }}
+                  onEditProject={openEditProject}
+                  onDeleteProject={handleDeleteProject}
+                  onAddRisk={() => setShowRiskModal(true)}
+                  onDeleteRisk={handleDeleteRisk}
+                  userName={session?.user?.name || ''}
+                />
               </PanelShell>
             </div>
           );
@@ -629,11 +746,7 @@ export default function ConsoleApp() {
         {draggingId && (
           <div
             className="console-cell w-12 console-endzone"
-            onDragOver={(event) => {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = 'move';
-              setOverId('__end__');
-            }}
+            onDragOver={(event) => { event.preventDefault(); setOverId('__end__'); }}
             onDrop={(event) => {
               event.preventDefault();
               setLayout((current) => {
@@ -658,19 +771,30 @@ export default function ConsoleApp() {
           </div>
         )}
       </div>
+
+      {showProjectModal && (
+        <ProjectModal
+          project={editingProject}
+          onSave={handleSaveProject}
+          onClose={() => { setShowProjectModal(false); setEditingProject(null); }}
+        />
+      )}
+      {showRiskModal && (
+        <RiskModal
+          projects={projects}
+          defaultProjectId={pinnedId}
+          onSave={handleSaveRisk}
+          onClose={() => setShowRiskModal(false)}
+        />
+      )}
     </div>
   );
 }
 
+// ── Top Bar ────────────────────────────────────────────────────────────────
 function ConsoleTopBar({
-  addOpen,
-  onAdd,
-  availablePanels,
-  onAddPanel,
-  onCloseAdd,
-  onReset,
-  theme,
-  setTheme,
+  addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
+  theme, setTheme, onAddProject, onAddRisk, onSignOut, userName, hasProjects,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -679,7 +803,12 @@ function ConsoleTopBar({
   onCloseAdd: () => void;
   onReset: () => void;
   theme: Theme;
-  setTheme: (value: Theme) => void;
+  setTheme: (v: Theme) => void;
+  onAddProject: () => void;
+  onAddRisk: () => void;
+  onSignOut: () => void;
+  userName: string;
+  hasProjects: boolean;
 }) {
   return (
     <header className="console-top">
@@ -690,23 +819,25 @@ function ConsoleTopBar({
         </div>
         <span className="console-top-sep" />
         <div className="console-breadcrumb">
-          <span className="console-bc-key">workspace</span>
-          <span className="console-bc-val">delivery</span>
-          <span className="console-bc-key">view</span>
-          <span className="console-bc-val">console</span>
+          <span className="console-bc-key">pm</span>
+          <span className="console-bc-val">{userName || 'console'}</span>
         </div>
       </div>
       <div className="console-top-c">
-        <span className="console-time">Mon 25 May &middot; 09:14</span>
-        <span className="console-pulse" />
-        <span className="console-live">live</span>
+        <button className="console-tbtn" onClick={onAddProject}>
+          {TLIcon.plus(11)}<span>new project</span>
+        </button>
+        {hasProjects && (
+          <button className="console-tbtn" onClick={onAddRisk}>
+            {TLIcon.plus(11)}<span>log risk</span>
+          </button>
+        )}
       </div>
       <div className="console-top-r">
-        <span className="console-kbd-hint">drag panel grips to rearrange</span>
         <div className="console-add-wrap">
           <button className={`console-tbtn ${addOpen ? 'is-on' : ''}`} onClick={onAdd} disabled={availablePanels.length === 0}>
             <span>{TLIcon.plus(11)}</span>
-            <span>add panel</span>
+            <span>panels</span>
           </button>
           {addOpen && (
             <div className="console-add-menu" onMouseLeave={onCloseAdd}>
@@ -724,24 +855,20 @@ function ConsoleTopBar({
             </div>
           )}
         </div>
-        <button className="console-tbtn" onClick={onReset} title="Reset layout">
-          <span>{TLIcon.refresh(12)}</span>
-        </button>
+        <button className="console-tbtn" onClick={onReset} title="Reset layout">{TLIcon.refresh(12)}</button>
         <button
           className="console-tbtn console-theme-toggle"
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
           title={`Switch to ${theme === 'light' ? 'dark' : 'light'}`}
         >
           {theme === 'light' ? (
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-              <path d="M9.5 7.5A4 4 0 014.5 2.5 4 4 0 1010 7.5z" fill="currentColor" />
-            </svg>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M9.5 7.5A4 4 0 014.5 2.5 4 4 0 1010 7.5z" fill="currentColor" /></svg>
           ) : (
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-              <circle cx="6" cy="6" r="2.2" fill="currentColor" />
-              <path d="M6 1v1.4M6 9.6V11M1 6h1.4M9.6 6H11M2.5 2.5l1 1M8.5 8.5l1 1M2.5 9.5l1-1M8.5 3.5l1-1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-            </svg>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.2" fill="currentColor" /><path d="M6 1v1.4M6 9.6V11M1 6h1.4M9.6 6H11M2.5 2.5l1 1M8.5 8.5l1 1M2.5 9.5l1-1M8.5 3.5l1-1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
           )}
+        </button>
+        <button className="console-tbtn" onClick={onSignOut} title="Sign out">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 10.5H2.5a1 1 0 01-1-1v-7a1 1 0 011-1h2M8 8.5l2.5-2.5L8 3.5M4.5 6h6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
       </div>
     </header>
