@@ -9,6 +9,7 @@ import { ProjectModal } from './ProjectModal';
 import { RiskModal } from './RiskModal';
 import { WorkspaceModal } from './WorkspaceModal';
 import { IntegrationModal } from './IntegrationModal';
+import { ComposeModal } from './ComposeModal';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -30,6 +31,9 @@ type PanelProps = {
   onAddRisk?: () => void;
   onDeleteRisk?: (id: string) => void;
   onViewProject?: (id: string) => void;
+  onCompose?: (data: { to?: string; subject?: string; body?: string; projectId?: string }) => void;
+  inboxEmails?: Array<{ id: string; from: string; org: string; subj: string; snip: string; at: string; project: string; state: 'new' | 'reply' | 'stale' | 'overdue' }>;
+  emailConnected?: boolean;
   userName?: string;
 };
 
@@ -342,12 +346,36 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Inbox signals',
     defaultW: 6,
     allowedW: [4, 6, 8, 12],
-    Component: function InboxPanel() {
+    Component: function InboxPanel({ inboxEmails, emailConnected }) {
+      if (!emailConnected) {
+        return (
+          <div className="cp-empty">
+            <p>Connect your email to see project-linked threads.</p>
+            <p className="cp-empty-sub">Go to <strong>/api/email/connect/microsoft</strong> or <strong>/api/email/connect/google</strong> to connect.</p>
+          </div>
+        );
+      }
+      if (!inboxEmails || inboxEmails.length === 0) {
+        return <div className="cp-empty"><p>No recent emails found.</p></div>;
+      }
       return (
-        <div className="cp-empty">
-          <p>Inbox integration coming soon.</p>
-          <p className="cp-empty-sub">Connect your email to see project-linked threads here.</p>
-        </div>
+        <ul className="cp-inbox">
+          {inboxEmails.map((item, index) => (
+            <li key={`${item.id}-${index}`} className={`cp-inbox-row cp-inbox-row--${item.state}`}>
+              <div className="cp-inbox-state" />
+              <div className="cp-inbox-body">
+                <div className="cp-inbox-line">
+                  <span className="cp-inbox-from">{item.from}</span>
+                  <span className="cp-inbox-org">{item.org}</span>
+                  <span className="cp-inbox-at">{item.at}</span>
+                </div>
+                <div className="cp-inbox-subj">{item.subj}</div>
+                <div className="cp-inbox-snip">{item.snip}</div>
+              </div>
+              {item.project && <div className="cp-inbox-tag">{item.project}</div>}
+            </li>
+          ))}
+        </ul>
       );
     },
   },
@@ -355,7 +383,7 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Pinned project',
     defaultW: 4,
     allowedW: [4, 6],
-    Component: function PinnedPanel({ projects, pinnedProjectId, onViewProject }) {
+    Component: function PinnedPanel({ projects, pinnedProjectId, onViewProject, onCompose }) {
       const selected = projects.find((p) => p.id === pinnedProjectId) || projects[0];
       if (!selected) {
         return <div className="cp-empty">Pin a project from the projects table.</div>;
@@ -391,6 +419,13 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
               <div className="cp-pinned-move">
                 <div className="cp-pinned-move-h">{selected.move || selected.next}</div>
                 <div className="cp-pinned-move-p">{selected.moveBody || `Health is at ${selected.health}%. Review and update.`}</div>
+                <div className="cp-pinned-move-actions">
+                  <button className="cp-btn cp-btn--primary" onClick={() => onCompose?.({
+                    subject: `${selected.code} — ${selected.move || selected.next || 'Project update'}`,
+                    body: selected.moveBody || `Hi,\n\nProject update for ${selected.name}.\n\nBest regards`,
+                    projectId: selected.id,
+                  })}>{TLIcon.send(11)}<span>draft &amp; send</span></button>
+                </div>
               </div>
             </div>
           )}
@@ -524,6 +559,10 @@ export default function ConsoleApp() {
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeData, setComposeData] = useState<{ to?: string; subject?: string; body?: string; projectId?: string }>({});
+  const [inboxEmails, setInboxEmails] = useState<Array<{ id: string; from: string; org: string; subj: string; snip: string; at: string; project: string; state: 'new' | 'reply' | 'stale' | 'overdue' }>>([]);
+  const [emailConnected, setEmailConnected] = useState(false);
   const [workspaces, setWorkspaces] = useState<Array<{ id: string; name: string; slug: string; role: string; projectCount: number; members: Array<{ id: string; name: string; email: string; role: string }> }>>([]);
   const [generatingMoves, setGeneratingMoves] = useState(false);
 
@@ -542,6 +581,15 @@ export default function ConsoleApp() {
       }
       if (riskRes.ok) setRisks(await riskRes.json());
       if (wsRes.ok) setWorkspaces(await wsRes.json());
+
+      // Fetch emails (non-blocking)
+      fetch('/api/email/inbox').then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          setInboxEmails(data.emails || []);
+          setEmailConnected(data.connected?.microsoft || data.connected?.google || false);
+        }
+      }).catch(() => {});
     } catch {
       // API not available (no database connected)
     }
@@ -766,6 +814,9 @@ export default function ConsoleApp() {
                   onAddRisk={() => setShowRiskModal(true)}
                   onDeleteRisk={handleDeleteRisk}
                   onViewProject={(id: string) => router.push(`/project/${id}`)}
+                  onCompose={(data) => { setComposeData(data); setShowCompose(true); }}
+                  inboxEmails={inboxEmails}
+                  emailConnected={emailConnected}
                   userName={session?.user?.name || ''}
                 />
               </PanelShell>
@@ -829,6 +880,16 @@ export default function ConsoleApp() {
           onClose={() => setShowIntegrationModal(false)}
           onImported={fetchData}
           workspaceId={workspaces[0]?.id}
+        />
+      )}
+      {showCompose && (
+        <ComposeModal
+          to={composeData.to}
+          subject={composeData.subject}
+          body={composeData.body}
+          projectId={composeData.projectId}
+          onClose={() => setShowCompose(false)}
+          onSent={fetchData}
         />
       )}
     </div>
