@@ -1,0 +1,300 @@
+export type PanelId = 'daybook' | 'metrics' | 'moves' | 'projects' | 'risks' | 'inbox' | 'pinned' | 'timeline' | 'comms';
+
+export interface ProjectRecord {
+  id: string;
+  code: string;
+  name: string;
+  client: string;
+  stage: string;
+  phase: number;
+  health: number;
+  risk: 'Low' | 'Medium' | 'High';
+  next: string;
+  nextWhen: string;
+  budget: string;
+  budgetState: 'good' | 'warn' | 'bad';
+  schedule: string;
+  scheduleState: 'good' | 'warn' | 'bad';
+  comms: number;
+  lastTouch: string;
+  owner: string;
+  contact: string;
+  channel: string;
+  move: string;
+  moveBody: string;
+  actions: string[];
+  timeline: Array<{ d: string; k: string; s: 'done' | 'active' | 'blocked' | 'planned' }>;
+}
+
+export interface RiskRecord {
+  id: string;
+  title: string;
+  project: string;
+  owner: string;
+  age: string;
+  severity: 'high' | 'med';
+  impact: string;
+  action: string;
+}
+
+export interface InboxMessage {
+  from: string;
+  org: string;
+  subj: string;
+  snip: string;
+  at: string;
+  project: string;
+  state: 'reply' | 'stale' | 'new' | 'overdue';
+}
+
+export interface PortfolioSummary {
+  health: number;
+  active: number;
+  risksOpen: number;
+  risksHigh: number;
+  updatesDue: number;
+  hoursSaved: number;
+}
+
+export const TL_PROJECTS: ProjectRecord[] = [
+  {
+    id: 'TL-1042',
+    code: 'ACC-VIN',
+    name: 'Enterprise Access Control Upgrade',
+    client: 'St Vincent Health Precinct',
+    stage: 'Delivery',
+    phase: 6,
+    health: 86,
+    risk: 'Medium',
+    next: 'Client witness test pack due today',
+    nextWhen: '3:00 PM',
+    budget: '+4.2%',
+    budgetState: 'good',
+    schedule: '+3 days',
+    scheduleState: 'good',
+    comms: 64,
+    lastTouch: '4d ago',
+    owner: 'Josh',
+    contact: 'Amanda Lee',
+    channel: 'Email',
+    move: 'Issue the witness test pack to Amanda before 3pm.',
+    moveBody:
+      'Four ITPs are complete and signed off. One dependency (controller cutover) is still pending IT — flag it in the cover note so the test window does not slip into Friday.',
+    actions: [
+      'Compile ITP evidence into single test pack',
+      'Email Amanda with test pack + IT dependency note',
+      'Confirm Friday witness window after IT response',
+      'Schedule handover walkthrough for week of 8 June',
+    ],
+    timeline: [
+      { d: 'Mon', k: 'Site survey', s: 'done' },
+      { d: 'Tue', k: 'Cable pathway approval', s: 'done' },
+      { d: 'Wed', k: 'Reader install', s: 'active' },
+      { d: 'Thu', k: 'Controller migration', s: 'active' },
+      { d: 'Fri', k: 'Witness testing', s: 'blocked' },
+      { d: 'Mon', k: 'Handover pack', s: 'planned' },
+    ],
+  },
+  {
+    id: 'TL-1088',
+    code: 'CCTV-MET',
+    name: 'CCTV Refresh & Network Cutover',
+    client: 'Metro Education Group',
+    stage: 'Commissioning',
+    phase: 5,
+    health: 58,
+    risk: 'High',
+    next: 'Switch config awaiting IT approval',
+    nextWhen: '11:30 AM',
+    budget: '-1.6%',
+    budgetState: 'warn',
+    schedule: '-2 days',
+    scheduleState: 'bad',
+    comms: 38,
+    lastTouch: '2d ago',
+    owner: 'Josh',
+    contact: 'Daniel Carter',
+    channel: 'Teams + Email',
+    move: 'Chase Daniel for switch-port confirmation before noon.',
+    moveBody:
+      'Site team is mobilised but blocked until IT signs the port config. Each hour of delay pushes commissioning by half a day. Suggested message attached.',
+    actions: [
+      'Call Daniel re: switch port approval',
+      'Prepare alt sequence using available stock',
+      'Update Friday milestone if IT slips past noon',
+      'Draft client note explaining schedule impact',
+    ],
+    timeline: [
+      { d: 'Mon', k: 'Pre-cutover audit', s: 'done' },
+      { d: 'Tue', k: 'Stock check', s: 'done' },
+      { d: 'Wed', k: 'IT approval', s: 'blocked' },
+      { d: 'Thu', k: 'Cutover window', s: 'planned' },
+      { d: 'Fri', k: 'Verification', s: 'planned' },
+    ],
+  },
+  {
+    id: 'TL-1120',
+    code: 'VMS-NTH',
+    name: 'Visitor Management Rollout',
+    client: 'Northbank Commercial',
+    stage: 'Planning',
+    phase: 2,
+    health: 94,
+    risk: 'Low',
+    next: 'Finalise floor-by-floor install plan',
+    nextWhen: 'Fri',
+    budget: '+8.1%',
+    budgetState: 'good',
+    schedule: 'On track',
+    scheduleState: 'good',
+    comms: 91,
+    lastTouch: '1d ago',
+    owner: 'Josh',
+    contact: 'Sarah Mitchell',
+    channel: 'Email',
+    move: 'Confirm floor access dates with Sarah this week.',
+    moveBody:
+      'Health is strong — a short proactive note keeps it that way. No major risks open.',
+    actions: [
+      'Draft install sequence by floor',
+      'Send confirmation request to Sarah',
+      'Lock building access windows',
+      'Order final reader stock',
+    ],
+    timeline: [
+      { d: 'Mon', k: 'Stakeholder review', s: 'done' },
+      { d: 'Tue', k: 'Floor plan walkthrough', s: 'active' },
+      { d: 'Wed', k: 'Install sequencing', s: 'planned' },
+      { d: 'Thu', k: 'Stock confirmation', s: 'planned' },
+      { d: 'Fri', k: 'Client sign-off', s: 'planned' },
+    ],
+  },
+  {
+    id: 'TL-1156',
+    code: 'SAF-RIV',
+    name: 'Public Safety Camera Expansion',
+    client: 'Riverside Council',
+    stage: 'Delivery',
+    phase: 4,
+    health: 41,
+    risk: 'High',
+    next: 'No update sent for 7 days',
+    nextWhen: 'Overdue',
+    budget: '-0.4%',
+    budgetState: 'warn',
+    schedule: '-1 day',
+    scheduleState: 'warn',
+    comms: 29,
+    lastTouch: '7d ago',
+    owner: 'Josh',
+    contact: 'Michael Tan',
+    channel: 'Email',
+    move: 'Send weekly update before Michael chases.',
+    moveBody:
+      'Seven days without contact while two site activities have closed out. No escalation yet — pre-empt it.',
+    actions: [
+      'Summarise last week\'s site activity',
+      'Draft weekly update to Michael',
+      'Schedule recurring Friday touchpoint',
+      'Confirm next access window',
+    ],
+    timeline: [
+      { d: 'Mon', k: 'Pole survey', s: 'done' },
+      { d: 'Tue', k: 'Council access review', s: 'done' },
+      { d: 'Wed', k: 'Camera install (Stage 1)', s: 'active' },
+      { d: 'Thu', k: 'Stage 2 access', s: 'planned' },
+      { d: 'Fri', k: 'Weekly client update', s: 'blocked' },
+    ],
+  },
+];
+
+export const TL_RISKS: RiskRecord[] = [
+  {
+    id: 'R-21',
+    title: 'IT dependency on switch-port config',
+    project: 'CCTV-MET',
+    owner: 'Daniel Carter',
+    age: '22h',
+    severity: 'high',
+    impact: 'Could delay commissioning 48h',
+    action: 'Call IT before noon, fall back to alt sequence if no response',
+  },
+  {
+    id: 'R-22',
+    title: 'Witness testing evidence gap',
+    project: 'ACC-VIN',
+    owner: 'Site Lead',
+    age: '2d',
+    severity: 'med',
+    impact: 'Handover pack at risk of rejection',
+    action: 'Auto-generate test pack from completed ITPs',
+  },
+  {
+    id: 'R-23',
+    title: 'Reader stock arrival uncertainty',
+    project: 'ACC-VIN',
+    owner: 'Procurement',
+    age: '3d',
+    severity: 'med',
+    impact: 'Install sequence may need to change',
+    action: 'Confirm courier ETA Mon AM; prep alt path',
+  },
+  {
+    id: 'R-24',
+    title: 'No client update for 7 days',
+    project: 'SAF-RIV',
+    owner: 'Josh',
+    age: '7d',
+    severity: 'high',
+    impact: 'Client likely to chase first',
+    action: 'Send weekly update by EOD',
+  },
+];
+
+export const TL_INBOX: InboxMessage[] = [
+  {
+    from: 'Amanda Lee',
+    org: 'St Vincent Health',
+    subj: 'Re: Witness testing availability',
+    snip: 'Friday 9am works on our side — can you confirm the test pack will be ready by Thursday close?',
+    at: '1h',
+    project: 'ACC-VIN',
+    state: 'reply',
+  },
+  {
+    from: 'Daniel Carter',
+    org: 'Metro Education',
+    subj: 'Re: CCTV cutover approval',
+    snip: 'IT team is reviewing now, will revert by end of day.',
+    at: '22h',
+    project: 'CCTV-MET',
+    state: 'stale',
+  },
+  {
+    from: 'Procurement',
+    org: 'Internal',
+    subj: 'Reader stock — courier update',
+    snip: 'Tracking shows arrival Tuesday rather than Monday. Adjusting…',
+    at: '3h',
+    project: 'ACC-VIN',
+    state: 'new',
+  },
+  {
+    from: 'Michael Tan',
+    org: 'Riverside Council',
+    subj: 'Weekly site access confirmation',
+    snip: '(No reply since last Friday\'s note — three days overdue.)',
+    at: '3d',
+    project: 'SAF-RIV',
+    state: 'overdue',
+  },
+];
+
+export const TL_PORTFOLIO: PortfolioSummary = {
+  health: 70,
+  active: 4,
+  risksOpen: 4,
+  risksHigh: 2,
+  updatesDue: 2,
+  hoursSaved: 9.5,
+};
