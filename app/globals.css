@@ -1679,3 +1679,138 @@ main {
   padding-top: 12px;
   border-top: 1px solid var(--tl-line-2);
 }
+
+/* ── project detail page ────────────────────────────────────── */
+.pd-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.pd-hero {
+  margin-bottom: 24px;
+}
+
+.pd-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tl-text-3);
+  margin-bottom: 8px;
+}
+
+.pd-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  margin: 0 0 4px;
+}
+
+.pd-subtitle {
+  font-size: 14px;
+  color: var(--tl-text-2);
+}
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.pd-card {
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pd-card--wide {
+  grid-column: span 2;
+}
+
+.pd-card--move {
+  grid-column: span 2;
+}
+
+.pd-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--tl-line-2);
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-2);
+  text-transform: lowercase;
+}
+
+.pd-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.pd-metric {
+  padding: 14px 16px;
+  border-right: 1px solid var(--tl-line-2);
+  text-align: center;
+}
+
+.pd-metric:last-child {
+  border-right: 0;
+}
+
+.pd-metric-val {
+  font-family: var(--tl-mono);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.pd-metric-unit {
+  font-size: 12px;
+  color: var(--tl-text-3);
+}
+
+.pd-metric-lbl {
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-3);
+}
+
+.pd-next {
+  padding: 12px 14px;
+}
+
+.pd-next-when {
+  font-family: var(--tl-mono);
+  font-size: 11px;
+  color: var(--tl-text-3);
+  margin-bottom: 4px;
+}
+
+.pd-next-what {
+  font-size: 13px;
+}
+
+.pd-move {
+  padding: 12px 14px;
+}
+
+.pd-move-h {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin-bottom: 6px;
+}
+
+.pd-move-p {
+  font-size: 12.5px;
+  color: var(--tl-text-2);
+  line-height: 1.5;
+}

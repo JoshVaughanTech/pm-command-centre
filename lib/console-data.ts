@@ -30,6 +30,7 @@ export interface RiskRecord {
   id: string;
   title: string;
   project: string;
+  projectId: string;
   owner: string;
   age: string;
   severity: 'high' | 'med';
@@ -213,6 +214,7 @@ export const TL_RISKS: RiskRecord[] = [
     id: 'R-21',
     title: 'IT dependency on switch-port config',
     project: 'CCTV-MET',
+    projectId: 'TL-1088',
     owner: 'Daniel Carter',
     age: '22h',
     severity: 'high',
@@ -223,6 +225,7 @@ export const TL_RISKS: RiskRecord[] = [
     id: 'R-22',
     title: 'Witness testing evidence gap',
     project: 'ACC-VIN',
+    projectId: 'TL-1042',
     owner: 'Site Lead',
     age: '2d',
     severity: 'med',
@@ -233,6 +236,7 @@ export const TL_RISKS: RiskRecord[] = [
     id: 'R-23',
     title: 'Reader stock arrival uncertainty',
     project: 'ACC-VIN',
+    projectId: 'TL-1042',
     owner: 'Procurement',
     age: '3d',
     severity: 'med',
@@ -243,6 +247,7 @@ export const TL_RISKS: RiskRecord[] = [
     id: 'R-24',
     title: 'No client update for 7 days',
     project: 'SAF-RIV',
+    projectId: 'TL-1156',
     owner: 'Josh',
     age: '7d',
     severity: 'high',

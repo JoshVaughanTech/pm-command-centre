@@ -11,6 +11,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "next": "14.2.5",

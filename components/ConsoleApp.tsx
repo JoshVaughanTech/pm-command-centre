@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { PanelShell } from './PanelShell';
 import { TLIcon } from './icons';
 import { ProjectModal } from './ProjectModal';
@@ -26,6 +27,7 @@ type PanelProps = {
   onDeleteProject?: (id: string) => void;
   onAddRisk?: () => void;
   onDeleteRisk?: (id: string) => void;
+  onViewProject?: (id: string) => void;
   userName?: string;
 };
 
@@ -351,7 +353,7 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
     title: 'Pinned project',
     defaultW: 4,
     allowedW: [4, 6],
-    Component: function PinnedPanel({ projects, pinnedProjectId, onEditProject }) {
+    Component: function PinnedPanel({ projects, pinnedProjectId, onViewProject }) {
       const selected = projects.find((p) => p.id === pinnedProjectId) || projects[0];
       if (!selected) {
         return <div className="cp-empty">Pin a project from the projects table.</div>;
@@ -390,8 +392,8 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
               </div>
             </div>
           )}
-          <button className="cp-pinned-action" onClick={() => onEditProject?.(selected.id)}>
-            edit project
+          <button className="cp-pinned-action" onClick={() => onViewProject?.(selected.id)}>
+            view full details
           </button>
         </div>
       );
@@ -498,6 +500,7 @@ function getStoredLayout() {
 
 export default function ConsoleApp() {
   const { data: session } = useSession();
+  const router = useRouter();
 
   // ── data state ───────────────────────────────────────────────
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
@@ -517,6 +520,7 @@ export default function ConsoleApp() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectRecord | null>(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
+  const [generatingMoves, setGeneratingMoves] = useState(false);
 
   // ── fetch data ───────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -629,6 +633,19 @@ export default function ConsoleApp() {
     }
   }
 
+  // ── AI moves ─────────────────────────────────────────────────
+  async function generateMoves() {
+    if (projects.length === 0 || generatingMoves) return;
+    setGeneratingMoves(true);
+    try {
+      const res = await fetch('/api/ai/moves', { method: 'POST' });
+      if (res.ok) await fetchData();
+    } catch {
+      // AI not available
+    }
+    setGeneratingMoves(false);
+  }
+
   // ── drag handlers ────────────────────────────────────────────
   const onDragStart = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
     setDraggingId(id);
@@ -696,6 +713,8 @@ export default function ConsoleApp() {
         onAddProject={() => { setEditingProject(null); setShowProjectModal(true); }}
         onAddRisk={() => setShowRiskModal(true)}
         onSignOut={() => signOut()}
+        onGenerateMoves={generateMoves}
+        generatingMoves={generatingMoves}
         userName={session?.user?.name || ''}
         hasProjects={projects.length > 0}
       />
@@ -736,6 +755,7 @@ export default function ConsoleApp() {
                   onDeleteProject={handleDeleteProject}
                   onAddRisk={() => setShowRiskModal(true)}
                   onDeleteRisk={handleDeleteRisk}
+                  onViewProject={(id: string) => router.push(`/project/${id}`)}
                   userName={session?.user?.name || ''}
                 />
               </PanelShell>
@@ -794,7 +814,7 @@ export default function ConsoleApp() {
 // ── Top Bar ────────────────────────────────────────────────────────────────
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
-  theme, setTheme, onAddProject, onAddRisk, onSignOut, userName, hasProjects,
+  theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves, userName, hasProjects,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -807,6 +827,8 @@ function ConsoleTopBar({
   onAddProject: () => void;
   onAddRisk: () => void;
   onSignOut: () => void;
+  onGenerateMoves: () => void;
+  generatingMoves: boolean;
   userName: string;
   hasProjects: boolean;
 }) {
@@ -830,6 +852,11 @@ function ConsoleTopBar({
         {hasProjects && (
           <button className="console-tbtn" onClick={onAddRisk}>
             {TLIcon.plus(11)}<span>log risk</span>
+          </button>
+        )}
+        {hasProjects && (
+          <button className="console-tbtn" onClick={onGenerateMoves} disabled={generatingMoves}>
+            {TLIcon.spark(11)}<span>{generatingMoves ? 'generating...' : 'AI moves'}</span>
           </button>
         )}
       </div>
