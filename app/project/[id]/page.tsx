@@ -17,6 +17,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
+  const [, setShareUrl] = useState('');
 
   const fetchData = useCallback(async () => {
     const [projRes, riskRes] = await Promise.all([
@@ -88,6 +89,21 @@ export default function ProjectDetailPage() {
           </div>
         </div>
         <div className="console-top-r">
+          <button className="console-tbtn" onClick={async () => {
+            const pw = prompt('Set a password for the client portal:');
+            if (!pw) return;
+            const res = await fetch('/api/shares', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectId, password: pw }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setShareUrl(data.url);
+              navigator.clipboard.writeText(data.url);
+              alert(`Link copied to clipboard!\n\n${data.url}\n\nPassword: ${pw}`);
+            }
+          }}>share with client</button>
           <button className="console-tbtn" onClick={() => setShowEdit(true)}>edit</button>
           <button className="console-tbtn" onClick={handleDelete} style={{ color: 'var(--tl-bad)' }}>delete</button>
         </div>

@@ -85,11 +85,37 @@ model Project {
   move          String     @default("")
   moveBody      String     @default("")
   risks         Risk[]
+  shares        ProjectShare[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   @@index([userId])
   @@index([workspaceId])
+}
+
+model ProjectShare {
+  id           String          @id @default(cuid())
+  token        String          @unique @default(cuid())
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  passwordHash String
+  createdBy    String
+  active       Boolean         @default(true)
+  messages     ClientMessage[]
+  createdAt    DateTime        @default(now())
+
+  @@index([projectId])
+}
+
+model ClientMessage {
+  id        String       @id @default(cuid())
+  shareId   String
+  share     ProjectShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  from      String
+  message   String
+  createdAt DateTime     @default(now())
+
+  @@index([shareId])
 }
 
 model Risk {

@@ -1999,3 +1999,70 @@ main {
   font-size: 11px;
   color: var(--tl-text-3);
 }
+
+/* ── client portal messages ─────────────────────────────────── */
+.portal-msg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.portal-msg-row {
+  display: flex;
+  gap: 8px;
+}
+
+.portal-msg-input {
+  padding: 8px 10px;
+  border: 1px solid var(--tl-line);
+  border-radius: 5px;
+  background: var(--tl-bg);
+  font-size: 13px;
+  font-family: var(--tl-sans);
+  color: var(--tl-text);
+  outline: none;
+}
+
+.portal-msg-input:focus {
+  border-color: var(--tl-ink);
+}
+
+.portal-msg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.portal-msg-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--tl-line-2);
+}
+
+.portal-msg-item:last-child {
+  border-bottom: 0;
+}
+
+.portal-msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.portal-msg-from {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.portal-msg-at {
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-3);
+}
+
+.portal-msg-text {
+  font-size: 13px;
+  color: var(--tl-text-2);
+  line-height: 1.5;
+}
