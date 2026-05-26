@@ -2497,3 +2497,204 @@ main {
 
   .portal-msg-row { flex-direction: column; }
 }
+
+/* ============================================================
+   ANIMATIONS & TRANSITIONS
+   ============================================================ */
+
+/* ── shimmer skeleton ───────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skel-line {
+  background: linear-gradient(90deg, var(--tl-line-2) 25%, var(--tl-surface-alt) 50%, var(--tl-line-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.skel-panel {
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.skel-panel-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tl-line-2);
+}
+
+.skel-panel-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skel-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+  padding: 14px;
+}
+
+.skel-cell-12 { grid-column: span 12; }
+.skel-cell-8 { grid-column: span 8; }
+.skel-cell-4 { grid-column: span 4; }
+
+.skel-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.skel-metric-cell {
+  padding: 14px 16px;
+  border-right: 1px solid var(--tl-line-2);
+}
+
+.skel-metric-cell:last-child { border-right: 0; }
+
+/* ── modal transitions ──────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-backdrop {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-card {
+  animation: slideUp 0.2s ease-out;
+}
+
+.cmd-backdrop {
+  animation: fadeIn 0.12s ease-out;
+}
+
+/* ── notification badge pulse ───────────────────────────────── */
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.notif-badge {
+  animation: badgePulse 2s ease-in-out 3;
+}
+
+/* ── button loading states ──────────────────────────────────── */
+.cp-btn:disabled,
+.console-tbtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── error boundary ─────────────────────────────────────────── */
+.err-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-bg);
+  padding: 20px;
+}
+
+.err-card {
+  max-width: 420px;
+  width: 100%;
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+}
+
+.err-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 16px 0 8px;
+}
+
+.err-message {
+  font-family: var(--tl-mono);
+  font-size: 11px;
+  color: var(--tl-bad);
+  background: var(--tl-bad-bg);
+  padding: 10px 12px;
+  border-radius: 5px;
+  margin: 12px 0;
+  text-align: left;
+  word-break: break-word;
+}
+
+.err-btn {
+  padding: 8px 20px;
+  background: var(--tl-ink);
+  color: var(--tl-bg);
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ── activity log ───────────────────────────────────────────── */
+.activity-list {
+  padding: 8px 0;
+  margin: 0;
+  list-style: none;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--tl-line-2);
+  font-size: 12px;
+}
+
+.activity-item:last-child { border-bottom: 0; }
+
+.activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tl-text-4);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.activity-dot--create { background: var(--tl-good); }
+.activity-dot--update { background: var(--tl-ink); }
+.activity-dot--delete { background: var(--tl-bad); }
+.activity-dot--risk { background: var(--tl-warn); }
+
+.activity-body { flex: 1; min-width: 0; }
+
+.activity-text {
+  color: var(--tl-text-2);
+  line-height: 1.4;
+}
+
+.activity-text strong {
+  color: var(--tl-text);
+  font-weight: 500;
+}
+
+.activity-at {
+  font-family: var(--tl-mono);
+  font-size: 10px;
+  color: var(--tl-text-4);
+  flex-shrink: 0;
+  margin-top: 2px;
+}

@@ -77,6 +77,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     },
   });
 
+  const changedFields = Object.keys(body).filter((k) => k !== 'id').join(', ');
+  await prisma.activityLog.create({
+    data: { userId, projectId: params.id, action: 'update', detail: `Updated ${project.code}: ${changedFields}` },
+  });
+
   return NextResponse.json(mapProject(project));
 }
 
@@ -92,5 +97,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await prisma.project.delete({ where: { id: params.id } });
+  await prisma.activityLog.create({
+    data: { userId, action: 'delete', detail: `Deleted project ${existing.code} — ${existing.name}` },
+  });
   return NextResponse.json({ ok: true });
 }

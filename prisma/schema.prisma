@@ -84,6 +84,7 @@ model Project {
   channel       String     @default("Email")
   move          String     @default("")
   moveBody      String     @default("")
+  checkinDays   Int        @default(7)
   risks         Risk[]
   shares        ProjectShare[]
   createdAt     DateTime   @default(now())
@@ -116,6 +117,30 @@ model ClientMessage {
   createdAt DateTime     @default(now())
 
   @@index([shareId])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  action    String   // create, update, delete, risk_add, risk_resolve, share
+  detail    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  layout    String   // JSON string of LayoutItem[]
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Risk {

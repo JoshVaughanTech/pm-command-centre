@@ -132,5 +132,9 @@ export async function POST(req: Request) {
     },
   });
 
+  await prisma.activityLog.create({
+    data: { userId, projectId: project.id, action: 'create', detail: `Created project ${project.code} — ${project.name}` },
+  });
+
   return NextResponse.json(mapProject(project), { status: 201 });
 }

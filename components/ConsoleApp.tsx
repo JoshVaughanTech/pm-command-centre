@@ -13,6 +13,7 @@ import { ComposeModal } from './ComposeModal';
 import { CommandPalette } from './CommandPalette';
 import { NotificationsDropdown, type Notification } from './NotificationsDropdown';
 import { Onboarding } from './Onboarding';
+import { SkeletonDashboard } from './Skeleton';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -815,7 +816,7 @@ export default function ConsoleApp() {
   if (loading) {
     return (
       <div className="console-root console-root--light console-root--d-compact">
-        <div className="cp-loading">Loading...</div>
+        <SkeletonDashboard />
       </div>
     );
   }
