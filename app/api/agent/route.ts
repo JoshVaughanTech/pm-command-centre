@@ -127,7 +127,7 @@ Guidelines:
   const client = new Anthropic({ apiKey });
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-5-20241022',
+    model: 'claude-sonnet-4-6',
     max_tokens: 2000,
     system: systemPrompt,
     messages,
