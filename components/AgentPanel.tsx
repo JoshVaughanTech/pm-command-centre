@@ -72,7 +72,13 @@ export function AgentPanel({ onClose, onRefresh }: AgentPanelProps) {
 
       if (res.ok) {
         const data = await res.json();
-        setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+        // If agent took actions, show them as a compact confirmation
+        let content = data.reply || '';
+        if (data.actions && data.actions.length > 0) {
+          content = (content ? content + '\n\n' : '') + '✓ ' + data.actions.join('\n✓ ');
+          onRefresh?.();
+        }
+        setMessages((prev) => [...prev, { role: 'assistant', content }]);
       } else {
         const err = await res.json();
         setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${err.error || 'Something went wrong'}` }]);
