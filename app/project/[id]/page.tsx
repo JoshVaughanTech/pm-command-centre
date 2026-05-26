@@ -27,6 +27,7 @@ export default function ProjectDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
   const [, setShareUrl] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Quick-add states
   const [newTask, setNewTask] = useState('');
@@ -68,6 +69,11 @@ export default function ProjectDetailPage() {
   }, [projectId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('sntri.console.theme.v1');
+    if (saved === 'dark' || saved === 'light') setTheme(saved);
+  }, []);
 
   async function handleSave(data: Record<string, string | number>) {
     const res = await fetch(`/api/projects/${projectId}`, {
@@ -133,13 +139,13 @@ export default function ProjectDetailPage() {
     await fetchData();
   }
 
-  if (loading) return <div className="console-root"><div className="cp-loading">Loading...</div></div>;
-  if (!project) return <div className="console-root"><div className="cp-loading">Project not found.</div></div>;
+  if (loading) return <div className={`console-root console-root--${theme}`}><div className="cp-loading">Loading...</div></div>;
+  if (!project) return <div className={`console-root console-root--${theme}`}><div className="cp-loading">Project not found.</div></div>;
 
   const healthCls = project.health < 50 ? 'bad' : project.health < 75 ? 'warn' : 'good';
 
   return (
-    <div className="console-root">
+    <div className={`console-root console-root--${theme}`}>
       <header className="console-top">
         <div className="console-top-l">
           <button className="console-tbtn" onClick={() => router.push('/')}>
@@ -171,6 +177,13 @@ export default function ProjectDetailPage() {
               alert(`Link copied to clipboard!\n\n${data.url}\n\nPassword: ${pw}`);
             }
           }}>share with client</button>
+          <button className="console-tbtn" onClick={() => { const t = theme === 'light' ? 'dark' : 'light'; setTheme(t); window.localStorage.setItem('sntri.console.theme.v1', t); }} title="Toggle theme">
+            {theme === 'light' ? (
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M9.5 7.5A4 4 0 014.5 2.5 4 4 0 1010 7.5z" fill="currentColor" /></svg>
+            ) : (
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.2" fill="currentColor" /><path d="M6 1v1.4M6 9.6V11M1 6h1.4M9.6 6H11M2.5 2.5l1 1M8.5 8.5l1 1M2.5 9.5l1-1M8.5 3.5l1-1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
+            )}
+          </button>
           <button className="console-tbtn" onClick={() => setShowEdit(true)}>edit</button>
           <button className="console-tbtn" onClick={handleDelete} style={{ color: 'var(--tl-bad)' }}>delete</button>
         </div>
