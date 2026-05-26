@@ -95,10 +95,10 @@ export function AgentPanel({ onClose, onRefresh }: AgentPanelProps) {
         setAnalysis(data);
         onRefresh?.();
 
-        // Add a summary message to the chat
+        // Add a short summary — details shown in the card below
         setMessages((prev) => [...prev, {
           role: 'assistant',
-          content: `Analysis complete. ${data.summary}\n\nChanges applied:\n${data.healthUpdates?.length ? `• ${data.healthUpdates.length} health score${data.healthUpdates.length > 1 ? 's' : ''} updated\n` : ''}${data.newRisks?.length ? `• ${data.newRisks.length} new risk${data.newRisks.length > 1 ? 's' : ''} detected\n` : ''}${data.moveUpdates ? `• ${data.moveUpdates} recommended move${data.moveUpdates > 1 ? 's' : ''} generated\n` : ''}${data.nextActions ? `• ${data.nextActions} next action${data.nextActions > 1 ? 's' : ''} set\n` : ''}${data.commsInsights?.length ? `• ${data.commsInsights.length} comms insight${data.commsInsights.length > 1 ? 's' : ''}\n` : ''}\nYour dashboard has been updated.`,
+          content: data.summary || 'Dashboard updated.',
         }]);
       } else {
         const err = await res.json();
@@ -190,24 +190,28 @@ export function AgentPanel({ onClose, onRefresh }: AgentPanelProps) {
           {/* Analysis results card */}
           {analysis && (
             <div className="agent-analysis-card">
-              <div className="agent-analysis-head">{TLIcon.spark(11)} analysis applied</div>
-              <div className="agent-analysis-body">
-                {analysis.healthUpdates?.map((h, i) => (
-                  <div key={`h${i}`} className="agent-analysis-item agent-analysis-item--health">
-                    {h.reason}
-                  </div>
-                ))}
-                {analysis.newRisks?.map((r, i) => (
-                  <div key={`r${i}`} className="agent-analysis-item agent-analysis-item--risk">
-                    New risk: {r.title}
-                  </div>
-                ))}
-                {analysis.commsInsights?.map((c, i) => (
-                  <div key={`c${i}`} className="agent-analysis-item agent-analysis-item--comms">
-                    {c.insight}
-                  </div>
-                ))}
+              <div className="agent-analysis-head">{TLIcon.spark(11)} changes applied</div>
+              <div className="agent-analysis-stats">
+                {(analysis.healthUpdates?.length || 0) > 0 && (
+                  <div className="agent-stat"><span className="agent-stat-num">{analysis.healthUpdates.length}</span><span className="agent-stat-lbl">health updated</span></div>
+                )}
+                {(analysis.newRisks?.length || 0) > 0 && (
+                  <div className="agent-stat agent-stat--risk"><span className="agent-stat-num">{analysis.newRisks.length}</span><span className="agent-stat-lbl">risks detected</span></div>
+                )}
+                {(analysis.moveUpdates || 0) > 0 && (
+                  <div className="agent-stat"><span className="agent-stat-num">{analysis.moveUpdates}</span><span className="agent-stat-lbl">moves set</span></div>
+                )}
+                {(analysis.nextActions || 0) > 0 && (
+                  <div className="agent-stat"><span className="agent-stat-num">{analysis.nextActions}</span><span className="agent-stat-lbl">actions set</span></div>
+                )}
               </div>
+              {(analysis.commsInsights?.length || 0) > 0 && (
+                <div className="agent-analysis-body">
+                  {analysis.commsInsights.map((c, i) => (
+                    <div key={`c${i}`} className="agent-analysis-item agent-analysis-item--comms">{c.insight}</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -107,13 +107,15 @@ Your capabilities:
 - Recommend what to focus on today/this week
 - Answer questions about any project using the data above
 
-Guidelines:
-- Be specific — name projects, people, and dates
-- Be concise — PMs are busy, get to the point
-- When drafting emails, make them professional but warm
-- When prioritising, consider: health score, comms staleness, risk severity, upcoming deadlines
-- If asked to draft something, provide the complete text ready to use
-- Use the PM's actual project data, never make up information`;
+Response format:
+- Keep responses SHORT. PMs are busy — every sentence must earn its place.
+- Use bullet points, not paragraphs. Max 3-5 bullets for most answers.
+- Lead with the action, not the reasoning.
+- When listing priorities: number them, one line each, most urgent first.
+- When drafting emails: just give the email text, no preamble.
+- Never repeat information the PM already knows. No "Based on your data..." intros.
+- Use project codes (ACC-VIN) not full names where possible.
+- Use the PM's actual project data, never make up information.`;
 
   // Build conversation history
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];

@@ -2481,6 +2481,39 @@ main {
 .agent-analysis-item--risk::before { background: var(--tl-bad); }
 .agent-analysis-item--comms::before { background: var(--tl-good); }
 
+.agent-analysis-stats {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--tl-line-2);
+}
+
+.agent-stat {
+  flex: 1;
+  padding: 10px 12px;
+  text-align: center;
+  border-right: 1px solid var(--tl-line-2);
+}
+
+.agent-stat:last-child { border-right: 0; }
+
+.agent-stat-num {
+  font-family: var(--tl-mono);
+  font-size: 18px;
+  font-weight: 500;
+  display: block;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.agent-stat--risk .agent-stat-num { color: var(--tl-bad); }
+
+.agent-stat-lbl {
+  font-family: var(--tl-mono);
+  font-size: 9.5px;
+  color: var(--tl-text-3);
+  text-transform: lowercase;
+}
+
 @media (max-width: 768px) {
   .agent-panel { width: 100%; }
 }

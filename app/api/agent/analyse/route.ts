@@ -174,7 +174,7 @@ Analyse everything and return a JSON object with these arrays. Be specific — u
   "commsInsights": [
     { "projectId": "...", "insight": "What the email analysis revealed" }
   ],
-  "summary": "2-3 sentence summary of key findings and what was optimised"
+  "summary": "One sentence. What's the single most important thing the PM needs to know right now?"
 }
 
 Rules:
