@@ -144,8 +144,6 @@ export default function ClientPortal() {
 
   if (!project) return null;
 
-  const healthCls = project.health < 50 ? 'bad' : project.health < 75 ? 'warn' : 'good';
-
   return (
     <div className="console-root">
       <header className="console-top">
@@ -166,7 +164,6 @@ export default function ClientPortal() {
         {/* Hero */}
         <div className="pd-hero">
           <div className="pd-hero-eyebrow">
-            <span className={`cp-rdot cp-rdot--${project.risk.toLowerCase()}`} />
             <span className="cp-mono">{project.code}</span>
             <span className="cp-mid-dot" />
             <span className="cp-stage">{project.stage.toLowerCase()}</span>
@@ -176,37 +173,35 @@ export default function ClientPortal() {
         </div>
 
         <div className="pd-grid">
-          {/* Health metrics */}
+          {/* Project status */}
           <div className="pd-card pd-card--wide">
             <div className="pd-card-head">project status</div>
             <div className="pd-metrics">
               <div className="pd-metric">
-                <div className={`pd-metric-val cp-state--${healthCls}`}>{project.health}<span className="pd-metric-unit">%</span></div>
-                <div className="pd-metric-lbl">health</div>
+                <div className="pd-metric-val">{project.stage}</div>
+                <div className="pd-metric-lbl">stage</div>
               </div>
               <div className="pd-metric">
-                <div className={`pd-metric-val cp-state--${project.budgetState}`}>{project.budget}</div>
-                <div className="pd-metric-lbl">budget</div>
+                <div className="pd-metric-val">{project.phase}<span className="pd-metric-unit">/8</span></div>
+                <div className="pd-metric-lbl">phase</div>
               </div>
               <div className="pd-metric">
                 <div className={`pd-metric-val cp-state--${project.scheduleState}`}>{project.schedule}</div>
                 <div className="pd-metric-lbl">schedule</div>
               </div>
               <div className="pd-metric">
-                <div className="pd-metric-val">{project.phase}<span className="pd-metric-unit">/8</span></div>
-                <div className="pd-metric-lbl">phase</div>
+                <div className="pd-metric-val">{project.lastTouch}</div>
+                <div className="pd-metric-lbl">last update</div>
               </div>
             </div>
           </div>
 
           {/* Details */}
           <div className="pd-card">
-            <div className="pd-card-head">details</div>
+            <div className="pd-card-head">your project team</div>
             <div className="cp-pinned-kv">
-              <div><span>pm</span><b>{project.owner || '—'}</b></div>
-              <div><span>contact</span><b>{project.contact || '—'}</b></div>
-              <div><span>stage</span><b>{project.stage}</b></div>
-              <div><span>last update</span><b>{project.lastTouch}</b></div>
+              <div><span>project manager</span><b>{project.owner || '—'}</b></div>
+              <div><span>your contact</span><b>{project.contact || '—'}</b></div>
             </div>
           </div>
 
@@ -218,35 +213,6 @@ export default function ClientPortal() {
                 {project.nextWhen && <div className="pd-next-when">{project.nextWhen}</div>}
                 <div className="pd-next-what">{project.next}</div>
               </div>
-            </div>
-          )}
-
-          {/* Risks */}
-          {risks.length > 0 && (
-            <div className="pd-card pd-card--wide">
-              <div className="pd-card-head">open risks ({risks.length})</div>
-              <table className="cp-table cp-table--tight">
-                <thead>
-                  <tr>
-                    <th className="cp-th-tight">sev</th>
-                    <th>risk</th>
-                    <th>owner</th>
-                    <th>impact</th>
-                    <th className="cp-th-num">age</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {risks.map((r) => (
-                    <tr key={r.id} style={{ cursor: 'default' }}>
-                      <td><span className={`cp-sev cp-sev--${r.severity}`}>{r.severity === 'high' ? 'H' : 'M'}</span></td>
-                      <td className="cp-td-name">{r.title}</td>
-                      <td>{r.owner}</td>
-                      <td>{r.impact}</td>
-                      <td className="cp-td-num">{r.age}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           )}
 
