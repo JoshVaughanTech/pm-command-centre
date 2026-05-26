@@ -56,12 +56,19 @@ export async function POST(req: Request) {
       return obj;
     });
 
+    // Use primary column as default name mapping
+    const primaryCol = columns.find((c) => c.primary);
+    const suggested = suggestMapping(columns.map((c) => c.title));
+    if (!suggested.name && primaryCol) {
+      suggested.name = primaryCol.title;
+    }
+
     return NextResponse.json({
       sheetName: sheet.name,
       columns: columns.map((c) => ({ id: c.id, title: c.title, type: c.type, primary: c.primary })),
       totalRows: rows.length,
       sampleRows,
-      suggestedMapping: suggestMapping(columns.map((c) => c.title)),
+      suggestedMapping: suggested,
     });
   }
 
@@ -141,11 +148,19 @@ function suggestMapping(columnNames: string[]): Record<string, string> {
   ];
 
   for (const [field, keywords] of patterns) {
+    // Try exact match first
     for (const keyword of keywords) {
       const idx = lower.indexOf(keyword);
-      if (idx >= 0) {
-        mapping[field] = columnNames[idx];
-        break;
+      if (idx >= 0) { mapping[field] = columnNames[idx]; break; }
+    }
+    // Then try partial match (column contains keyword or keyword contains column)
+    if (!mapping[field]) {
+      for (const keyword of keywords) {
+        const idx = lower.findIndex((c) => c.includes(keyword) || keyword.includes(c));
+        if (idx >= 0 && !Object.values(mapping).includes(columnNames[idx])) {
+          mapping[field] = columnNames[idx];
+          break;
+        }
       }
     }
   }
