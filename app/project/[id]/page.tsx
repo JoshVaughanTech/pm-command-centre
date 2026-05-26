@@ -12,17 +12,37 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const projectId = params.id as string;
 
+  type TaskItem = { id: string; title: string; assignee: string; status: string; priority: string; dueDate: string | null };
+  type TimeItem = { id: string; hours: number; date: string; note: string };
+  type FinItem = { id: string; type: string; amount: number; description: string; reference: string; date: string; status: string };
+
   const [project, setProject] = useState<ProjectRecord | null>(null);
   const [risks, setRisks] = useState<RiskRecord[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeItem[]>([]);
+  const [totalHours, setTotalHours] = useState(0);
+  const [financials, setFinancials] = useState<FinItem[]>([]);
+  const [totalCost, setTotalCost] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
   const [, setShareUrl] = useState('');
 
+  // Quick-add states
+  const [newTask, setNewTask] = useState('');
+  const [newHours, setNewHours] = useState('');
+  const [newHoursNote, setNewHoursNote] = useState('');
+  const [newFinAmt, setNewFinAmt] = useState('');
+  const [newFinDesc, setNewFinDesc] = useState('');
+  const [newFinType, setNewFinType] = useState('cost');
+
   const fetchData = useCallback(async () => {
-    const [projRes, riskRes] = await Promise.all([
+    const [projRes, riskRes, taskRes, timeRes, finRes] = await Promise.all([
       fetch('/api/projects'),
       fetch('/api/risks'),
+      fetch(`/api/tasks?projectId=${projectId}`),
+      fetch(`/api/time?projectId=${projectId}`),
+      fetch(`/api/financials?projectId=${projectId}`),
     ]);
     if (projRes.ok) {
       const projects: ProjectRecord[] = await projRes.json();
@@ -31,6 +51,18 @@ export default function ProjectDetailPage() {
     if (riskRes.ok) {
       const allRisks: RiskRecord[] = await riskRes.json();
       setRisks(allRisks.filter((r) => r.projectId === projectId));
+    }
+    if (taskRes.ok) setTasks(await taskRes.json());
+    if (timeRes.ok) {
+      const data = await timeRes.json();
+      setTimeEntries(data.entries || []);
+      setTotalHours(data.totals?.[0]?.totalHours || 0);
+    }
+    if (finRes.ok) {
+      const data = await finRes.json();
+      setFinancials(data.entries || []);
+      const costs = (data.totals || []).filter((t: { type: string }) => t.type === 'cost').reduce((s: number, t: { total: number }) => s + t.total, 0);
+      setTotalCost(costs);
     }
     setLoading(false);
   }, [projectId]);
@@ -64,6 +96,41 @@ export default function ProjectDetailPage() {
     if (!confirm('Delete this project and all its risks?')) return;
     const res = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
     if (res.ok) router.push('/');
+  }
+
+  async function addTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTask.trim()) return;
+    await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, title: newTask }) });
+    setNewTask('');
+    await fetchData();
+  }
+
+  async function toggleTask(id: string, currentStatus: string) {
+    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+    await fetch(`/api/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+    await fetchData();
+  }
+
+  async function deleteTask(id: string) {
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    await fetchData();
+  }
+
+  async function addTime(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newHours) return;
+    await fetch('/api/time', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, hours: parseFloat(newHours), note: newHoursNote }) });
+    setNewHours(''); setNewHoursNote('');
+    await fetchData();
+  }
+
+  async function addFinancial(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newFinAmt) return;
+    await fetch('/api/financials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, type: newFinType, amount: parseFloat(newFinAmt), description: newFinDesc }) });
+    setNewFinAmt(''); setNewFinDesc('');
+    await fetchData();
   }
 
   if (loading) return <div className="console-root"><div className="cp-loading">Loading...</div></div>;
@@ -218,6 +285,78 @@ export default function ProjectDetailPage() {
                 </tbody>
               </table>
             )}
+          </div>
+
+          {/* ── Tasks ────────────────────────────────── */}
+          <div className="pd-card pd-card--wide">
+            <div className="pd-card-head">
+              <span>tasks ({tasks.length}{tasks.filter(t => t.status === 'done').length > 0 ? ` · ${tasks.filter(t => t.status === 'done').length} done` : ''})</span>
+            </div>
+            <div style={{ padding: '10px 14px' }}>
+              <form onSubmit={addTask} style={{ display: 'flex', gap: 8, marginBottom: tasks.length > 0 ? 10 : 0 }}>
+                <input value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Add a task..." className="portal-msg-input" style={{ flex: 1 }} />
+                <button type="submit" className="cp-btn cp-btn--primary" disabled={!newTask.trim()}>Add</button>
+              </form>
+              {tasks.map((t) => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--tl-line-2)' }}>
+                  <button onClick={() => toggleTask(t.id, t.status)} style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid var(--tl-line-strong)', background: t.status === 'done' ? 'var(--tl-good)' : 'transparent', flexShrink: 0, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 10 }}>
+                    {t.status === 'done' && '✓'}
+                  </button>
+                  <span style={{ flex: 1, fontSize: 12.5, textDecoration: t.status === 'done' ? 'line-through' : 'none', color: t.status === 'done' ? 'var(--tl-text-3)' : 'var(--tl-text)' }}>{t.title}</span>
+                  {t.dueDate && <span className="cp-mono" style={{ fontSize: 10, color: 'var(--tl-text-4)' }}>{t.dueDate}</span>}
+                  {t.assignee && <span style={{ fontSize: 11, color: 'var(--tl-text-3)' }}>{t.assignee}</span>}
+                  <button className="console-panel-btn" onClick={() => deleteTask(t.id)}>&times;</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Time tracking ────────────────────────── */}
+          <div className="pd-card">
+            <div className="pd-card-head">
+              <span>time logged</span>
+              <span className="cp-mono" style={{ fontSize: 13, fontWeight: 500 }}>{totalHours.toFixed(1)}h</span>
+            </div>
+            <div style={{ padding: '10px 14px' }}>
+              <form onSubmit={addTime} style={{ display: 'flex', gap: 6, marginBottom: timeEntries.length > 0 ? 10 : 0 }}>
+                <input type="number" step="0.5" min="0.5" value={newHours} onChange={(e) => setNewHours(e.target.value)} placeholder="Hrs" className="portal-msg-input" style={{ width: 60 }} />
+                <input value={newHoursNote} onChange={(e) => setNewHoursNote(e.target.value)} placeholder="What did you work on?" className="portal-msg-input" style={{ flex: 1 }} />
+                <button type="submit" className="cp-btn" disabled={!newHours}>Log</button>
+              </form>
+              {timeEntries.slice(0, 5).map((e) => (
+                <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--tl-line-2)', fontSize: 12 }}>
+                  <span>{e.note || 'Time logged'}</span>
+                  <span className="cp-mono" style={{ color: 'var(--tl-text-3)' }}>{e.hours}h · {e.date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Financials ───────────────────────────── */}
+          <div className="pd-card">
+            <div className="pd-card-head">
+              <span>financials</span>
+              <span className="cp-mono" style={{ fontSize: 13, fontWeight: 500 }}>${totalCost.toLocaleString()}</span>
+            </div>
+            <div style={{ padding: '10px 14px' }}>
+              <form onSubmit={addFinancial} style={{ display: 'flex', gap: 6, marginBottom: financials.length > 0 ? 10 : 0 }}>
+                <select value={newFinType} onChange={(e) => setNewFinType(e.target.value)} className="portal-msg-input" style={{ width: 80 }}>
+                  <option value="cost">Cost</option>
+                  <option value="po">PO</option>
+                  <option value="invoice">Invoice</option>
+                  <option value="payment">Payment</option>
+                </select>
+                <input type="number" step="0.01" value={newFinAmt} onChange={(e) => setNewFinAmt(e.target.value)} placeholder="$" className="portal-msg-input" style={{ width: 80 }} />
+                <input value={newFinDesc} onChange={(e) => setNewFinDesc(e.target.value)} placeholder="Description" className="portal-msg-input" style={{ flex: 1 }} />
+                <button type="submit" className="cp-btn" disabled={!newFinAmt}>Add</button>
+              </form>
+              {financials.slice(0, 5).map((f) => (
+                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--tl-line-2)', fontSize: 12 }}>
+                  <span><span className="cp-stage">{f.type}</span> {f.description}</span>
+                  <span className="cp-mono" style={{ color: 'var(--tl-text-3)' }}>${f.amount.toLocaleString()} · {f.date}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
