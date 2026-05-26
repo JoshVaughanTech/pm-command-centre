@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { TLIcon } from './icons';
+import { Markdown } from './Markdown';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -177,7 +178,7 @@ export function AgentPanel({ onClose, onRefresh }: AgentPanelProps) {
                 <div className="agent-msg-avatar">{TLIcon.spark(10)}</div>
               )}
               <div className="agent-msg-content">
-                <div className="agent-msg-text">{msg.content}</div>
+                <div className="agent-msg-text">{msg.role === 'assistant' ? <Markdown text={msg.content} /> : msg.content}</div>
               </div>
             </div>
           ))}

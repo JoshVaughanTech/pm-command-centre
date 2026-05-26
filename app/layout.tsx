@@ -4,7 +4,20 @@ import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'SNTRI',
-  description: 'PM command centre — manage projects, risks, and client communications.',
+  description: 'PM command centre — manage projects, risks, and client communications with AI-powered recommendations.',
+  openGraph: {
+    title: 'SNTRI — PM Command Centre',
+    description: 'One dashboard for your projects, risks, clients, and team. AI-powered moves, real-time integrations, and client portals.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SNTRI — PM Command Centre',
+    description: 'One dashboard for your projects, risks, clients, and team.',
+  },
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -634,12 +634,27 @@ export default function ConsoleApp() {
   useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_THEME, theme); }, [theme]);
   useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_DENSITY, density); }, [density]);
 
-  // ── Cmd+K listener ───────────────────────────────────────────
+  // ── keyboard shortcuts ───────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setShowCommandPalette((v) => !v);
+        return;
+      }
+
+      // Single key shortcuts (only when no modifier)
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key) {
+        case 'n': e.preventDefault(); setEditingProject(null); setShowProjectModal(true); break;
+        case 'r': e.preventDefault(); setShowRiskModal(true); break;
+        case '/': e.preventDefault(); setShowCommandPalette(true); break;
+        case 'a': e.preventDefault(); setShowAgent(true); break;
       }
     }
     document.addEventListener('keydown', onKey);
