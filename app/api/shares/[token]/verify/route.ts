@@ -4,7 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { formatTimeAgo, computeComms } from '@/lib/utils';
 
 export async function POST(req: Request, { params }: { params: { token: string } }) {
-  const { password } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { password } = body;
 
   const share = await prisma.projectShare.findUnique({
     where: { token: params.token },

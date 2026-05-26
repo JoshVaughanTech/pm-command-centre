@@ -10,7 +10,9 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const { sheetId, action, mapping, workspaceId } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { sheetId, action, mapping, workspaceId } = body;
 
   const integration = await prisma.integration.findUnique({
     where: { userId_provider: { userId, provider: 'asana' } },

@@ -16,8 +16,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/?email_error=auth_failed', req.url));
   }
 
-  const clientId = process.env.MICROSOFT_CLIENT_ID!;
-  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET!;
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return NextResponse.redirect(new URL('/?connect_error=not_configured', req.url));
   const baseUrl = process.env.NEXTAUTH_URL || '';
   const redirectUri = `${baseUrl}/api/email/callback/microsoft`;
 

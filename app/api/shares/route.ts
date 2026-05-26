@@ -10,7 +10,9 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const { projectId, password } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { projectId, password } = body;
 
   if (!projectId || !password) {
     return NextResponse.json({ error: 'Project ID and password are required' }, { status: 400 });

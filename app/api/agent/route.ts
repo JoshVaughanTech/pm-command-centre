@@ -168,7 +168,9 @@ export async function POST(req: Request) {
   if (!apiKey) return NextResponse.json({ error: 'AI not configured' }, { status: 500 });
 
   const userId = (session.user as { id: string }).id;
-  const { message, history } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { message, history } = body;
 
   if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400 });
 

@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { formatTimeAgo } from '@/lib/utils';
 
 export async function POST(req: Request, { params }: { params: { token: string } }) {
-  const { shareId, from, message } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { shareId, from, message } = body;
 
   if (!shareId || !from || !message) {
     return NextResponse.json({ error: 'Name and message are required' }, { status: 400 });

@@ -16,8 +16,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/?connect_error=monday', req.url));
   }
 
-  const clientId = process.env.MONDAY_CLIENT_ID!;
-  const clientSecret = process.env.MONDAY_CLIENT_SECRET!;
+  const clientId = process.env.MONDAY_CLIENT_ID;
+  const clientSecret = process.env.MONDAY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return NextResponse.redirect(new URL('/?connect_error=not_configured', req.url));
   const baseUrl = process.env.NEXTAUTH_URL || '';
   const redirectUri = `${baseUrl}/api/integrations/monday/callback`;
 

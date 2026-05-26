@@ -58,7 +58,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const body = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
 
   const existing = await prisma.project.findFirst({
     where: { id: params.id, userId },

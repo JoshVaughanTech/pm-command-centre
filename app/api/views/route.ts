@@ -27,7 +27,9 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const { name, layout } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { name, layout } = body;
 
   if (!name || !layout) return NextResponse.json({ error: 'Name and layout are required' }, { status: 400 });
 
@@ -47,7 +49,9 @@ export async function DELETE(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const { id } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+  const { id } = body;
 
   await prisma.savedView.deleteMany({ where: { id, userId } });
   return NextResponse.json({ ok: true });
