@@ -10,6 +10,9 @@ import { RiskModal } from './RiskModal';
 import { WorkspaceModal } from './WorkspaceModal';
 import { IntegrationModal } from './IntegrationModal';
 import { ComposeModal } from './ComposeModal';
+import { CommandPalette } from './CommandPalette';
+import { NotificationsDropdown, type Notification } from './NotificationsDropdown';
+import { Onboarding } from './Onboarding';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -575,6 +578,9 @@ export default function ConsoleApp() {
   const [emailConnected, setEmailConnected] = useState(false);
   const [workspaces, setWorkspaces] = useState<Array<{ id: string; name: string; slug: string; role: string; projectCount: number; members: Array<{ id: string; name: string; email: string; role: string }> }>>([]);
   const [generatingMoves, setGeneratingMoves] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // ── fetch data ───────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -624,6 +630,44 @@ export default function ConsoleApp() {
   useEffect(() => { if (typeof window !== 'undefined' && pinnedId) window.localStorage.setItem(STORAGE_PINNED, pinnedId); }, [pinnedId]);
   useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_THEME, theme); }, [theme]);
   useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_DENSITY, density); }, [density]);
+
+  // ── Cmd+K listener ───────────────────────────────────────────
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((v) => !v);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // ── show onboarding for new users ───────────────────────────
+  useEffect(() => {
+    if (!loading && projects.length === 0) {
+      const dismissed = window.localStorage.getItem('sntri.onboarding.dismissed');
+      if (!dismissed) setShowOnboarding(true);
+    }
+  }, [loading, projects.length]);
+
+  // ── generate notifications from data ────────────────────────
+  useEffect(() => {
+    const notifs: Notification[] = [];
+    // Stale comms
+    for (const p of projects) {
+      if (p.comms < 40) {
+        notifs.push({ id: `stale-${p.id}`, type: 'stale', title: `Comms stale on ${p.code}`, detail: `${p.client} — last touch ${p.lastTouch}`, at: p.lastTouch, read: false });
+      }
+    }
+    // High risks
+    for (const r of risks) {
+      if (r.severity === 'high') {
+        notifs.push({ id: `risk-${r.id}`, type: 'risk', title: `High risk: ${r.title}`, detail: r.project, at: r.age, read: false });
+      }
+    }
+    setNotifications(notifs);
+  }, [projects, risks]);
 
   // ── computed ─────────────────────────────────────────────────
   const portfolio = useMemo<PortfolioSummary>(() => {
@@ -711,6 +755,18 @@ export default function ConsoleApp() {
     setGeneratingMoves(false);
   }
 
+  // ── command palette actions ───────────────────────────────────
+  function handleCommandAction(action: string) {
+    switch (action) {
+      case 'add-project': setEditingProject(null); setShowProjectModal(true); break;
+      case 'add-risk': setShowRiskModal(true); break;
+      case 'generate-moves': generateMoves(); break;
+      case 'import': setShowIntegrationModal(true); break;
+      case 'toggle-theme': setTheme(theme === 'light' ? 'dark' : 'light'); break;
+      case 'workspaces': setShowWorkspaceModal(true); break;
+    }
+  }
+
   // ── drag handlers ────────────────────────────────────────────
   const onDragStart = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
     setDraggingId(id);
@@ -758,8 +814,29 @@ export default function ConsoleApp() {
 
   if (loading) {
     return (
-      <div className="console-root console-root--light">
+      <div className="console-root console-root--light console-root--d-compact">
         <div className="cp-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (showOnboarding) {
+    return (
+      <div className={`console-root console-root--${theme}`}>
+        <Onboarding
+          userName={session?.user?.name || ''}
+          hasProjects={projects.length > 0}
+          onAddProject={() => { setShowOnboarding(false); setEditingProject(null); setShowProjectModal(true); }}
+          onImport={() => { setShowOnboarding(false); setShowIntegrationModal(true); }}
+          onGenerateMoves={() => { setShowOnboarding(false); generateMoves(); }}
+          onDismiss={() => { setShowOnboarding(false); window.localStorage.setItem('sntri.onboarding.dismissed', '1'); }}
+        />
+        {showProjectModal && (
+          <ProjectModal project={editingProject} onSave={async (data) => { await handleSaveProject(data); setShowOnboarding(projects.length === 0); }} onClose={() => setShowProjectModal(false)} />
+        )}
+        {showIntegrationModal && (
+          <IntegrationModal onClose={() => { setShowIntegrationModal(false); setShowOnboarding(projects.length === 0); }} onImported={fetchData} workspaceId={workspaces[0]?.id} />
+        )}
       </div>
     );
   }
@@ -782,6 +859,9 @@ export default function ConsoleApp() {
         generatingMoves={generatingMoves}
         onWorkspaces={() => setShowWorkspaceModal(true)}
         onImport={() => setShowIntegrationModal(true)}
+        onCommandPalette={() => setShowCommandPalette(true)}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications((n) => n.map((x) => ({ ...x, read: true })))}
         userName={session?.user?.name || ''}
         hasProjects={projects.length > 0}
         workspaceName={workspaces.length > 0 ? workspaces[0].name : ''}
@@ -902,6 +982,14 @@ export default function ConsoleApp() {
           onSent={fetchData}
         />
       )}
+      {showCommandPalette && (
+        <CommandPalette
+          projects={projects}
+          onSelectProject={(id) => router.push(`/project/${id}`)}
+          onAction={handleCommandAction}
+          onClose={() => setShowCommandPalette(false)}
+        />
+      )}
     </div>
   );
 }
@@ -910,7 +998,7 @@ export default function ConsoleApp() {
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
   theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves,
-  onWorkspaces, onImport, userName, hasProjects, workspaceName,
+  onWorkspaces, onImport, onCommandPalette, notifications, onMarkAllRead, userName, hasProjects, workspaceName,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -927,6 +1015,9 @@ function ConsoleTopBar({
   generatingMoves: boolean;
   onWorkspaces: () => void;
   onImport: () => void;
+  onCommandPalette: () => void;
+  notifications: Notification[];
+  onMarkAllRead: () => void;
   userName: string;
   hasProjects: boolean;
   workspaceName: string;
@@ -995,6 +1086,10 @@ function ConsoleTopBar({
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="4" cy="4" r="2" stroke="currentColor" strokeWidth="1.1" /><circle cx="8.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.1" /><circle cx="6.25" cy="8" r="2" stroke="currentColor" strokeWidth="1.1" /></svg>
           <span>team</span>
         </button>
+        <button className="console-tbtn" onClick={onCommandPalette} title="Search (Ctrl+K)">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><circle cx="6.5" cy="6.5" r="4.5" /><path d="M10 10l4 4" /></svg>
+        </button>
+        <NotificationsDropdown notifications={notifications} onMarkRead={() => {}} onMarkAllRead={onMarkAllRead} onClickNotification={() => {}} />
         <button className="console-tbtn" onClick={onReset} title="Reset layout">{TLIcon.refresh(12)}</button>
         <button
           className="console-tbtn console-theme-toggle"
