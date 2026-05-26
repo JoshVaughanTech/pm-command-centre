@@ -14,6 +14,7 @@ import { CommandPalette } from './CommandPalette';
 import { NotificationsDropdown, type Notification } from './NotificationsDropdown';
 import { Onboarding } from './Onboarding';
 import { SkeletonDashboard } from './Skeleton';
+import { AgentPanel } from './AgentPanel';
 import { computePortfolio, getDayName, getDateDisplay } from '@/lib/utils';
 import type { PanelId, ProjectRecord, RiskRecord, PortfolioSummary } from '@/lib/console-data';
 
@@ -582,6 +583,7 @@ export default function ConsoleApp() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showAgent, setShowAgent] = useState(false);
 
   // ── fetch data ───────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -861,6 +863,7 @@ export default function ConsoleApp() {
         onWorkspaces={() => setShowWorkspaceModal(true)}
         onImport={() => setShowIntegrationModal(true)}
         onCommandPalette={() => setShowCommandPalette(true)}
+        onAgent={() => setShowAgent(true)}
         notifications={notifications}
         onMarkAllRead={() => setNotifications((n) => n.map((x) => ({ ...x, read: true })))}
         userName={session?.user?.name || ''}
@@ -991,6 +994,9 @@ export default function ConsoleApp() {
           onClose={() => setShowCommandPalette(false)}
         />
       )}
+      {showAgent && (
+        <AgentPanel onClose={() => setShowAgent(false)} />
+      )}
     </div>
   );
 }
@@ -999,7 +1005,7 @@ export default function ConsoleApp() {
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
   theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves,
-  onWorkspaces, onImport, onCommandPalette, notifications, onMarkAllRead, userName, hasProjects, workspaceName,
+  onWorkspaces, onImport, onCommandPalette, onAgent, notifications, onMarkAllRead, userName, hasProjects, workspaceName,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -1017,6 +1023,7 @@ function ConsoleTopBar({
   onWorkspaces: () => void;
   onImport: () => void;
   onCommandPalette: () => void;
+  onAgent: () => void;
   notifications: Notification[];
   onMarkAllRead: () => void;
   userName: string;
@@ -1060,6 +1067,9 @@ function ConsoleTopBar({
             {TLIcon.spark(11)}<span>{generatingMoves ? 'generating...' : 'AI moves'}</span>
           </button>
         )}
+        <button className="console-tbtn" onClick={onAgent}>
+          {TLIcon.spark(11)}<span>agent</span>
+        </button>
       </div>
       <div className="console-top-r">
         <div className="console-add-wrap">
