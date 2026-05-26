@@ -47,6 +47,8 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
+  const [importedRisks, setImportedRisks] = useState(0);
+  const [analysisSummary, setAnalysisSummary] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -166,6 +168,32 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
     }
   }
 
+  async function handleSmartImport() {
+    setLoading(true);
+    setError('');
+
+    const importBody = provider === 'csv'
+      ? { provider: 'csv', csvColumns: columns.map((c) => c.title), csvRows: sampleRows, workspaceId }
+      : { provider, sheetId: selectedSheet, workspaceId };
+
+    const res = await fetch('/api/agent/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(importBody),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (res.ok) {
+      setImportedCount(data.imported);
+      setAnalysisSummary(data.summary || '');
+      setImportedRisks(data.risks || 0);
+      setStep('done');
+      onImported();
+    } else {
+      setError(data.error || 'AI import failed');
+    }
+  }
+
   const providerLabel = PROVIDERS.find((p) => p.id === provider)?.label || '';
 
   return (
@@ -274,11 +302,29 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
           {/* ── Column mapping ─────────────────────────── */}
           {step === 'mapping' && (
             <>
-              <p style={{ fontSize: 12.5, color: 'var(--tl-text-2)', margin: '0 0 4px' }}>
-                Map columns to SNTRI fields. {totalRows} rows will be imported as projects.
-              </p>
+              {/* AI Smart Import — primary action */}
+              <button
+                className="agent-analyse-btn"
+                onClick={handleSmartImport}
+                disabled={loading}
+                style={{ marginBottom: 16 }}
+              >
+                <span className="agent-analyse-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.3 4.3L13.5 6l-4.2 1.3L8 11.5 6.7 7.3 2.5 6l4.2-1.3z" /><path d="M12 10l.6 1.8 1.9.7-1.9.6-.6 1.9-.6-1.9-1.9-.6 1.9-.7z" opacity=".6" /></svg>
+                </span>
+                <div className="agent-analyse-text">
+                  <div className="agent-analyse-title">{loading ? 'AI is analysing your data...' : 'AI Smart Import'}</div>
+                  <div className="agent-analyse-desc">
+                    {loading
+                      ? 'Reading columns, mapping fields, setting health scores, detecting risks...'
+                      : `Analyse ${totalRows} rows — auto-map fields, set health scores, detect risks, generate moves`}
+                  </div>
+                </div>
+              </button>
+
+              <div className="agent-divider">or map columns manually</div>
               <p style={{ fontSize: 11, color: 'var(--tl-text-4)', margin: '0 0 14px' }}>
-                Auto-mapped where possible. Adjust as needed.
+                {totalRows} rows found. Adjust mapping if needed.
               </p>
 
               <div className="int-mapping">
@@ -341,9 +387,11 @@ export function IntegrationModal({ onClose, onImported, workspaceId }: Integrati
           {step === 'done' && (
             <div className="cp-empty">
               <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--tl-text)' }}>
-                {importedCount} project{importedCount !== 1 ? 's' : ''} imported from {providerLabel}
+                {importedCount} project{importedCount !== 1 ? 's' : ''} imported
+                {importedRisks > 0 && ` · ${importedRisks} risk${importedRisks !== 1 ? 's' : ''} detected`}
               </p>
-              <p>Your data is now in SNTRI. Hit &ldquo;AI moves&rdquo; to generate recommendations.</p>
+              {analysisSummary && <p style={{ fontSize: 12.5, color: 'var(--tl-text-2)', lineHeight: 1.5 }}>{analysisSummary}</p>}
+              {!analysisSummary && <p>Your data is now in SNTRI.</p>}
               <button className="cp-btn cp-btn--primary" onClick={onClose} style={{ marginTop: 8 }}>Done</button>
             </div>
           )}
