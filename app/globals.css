@@ -2385,6 +2385,102 @@ main {
 
 .agent-send:hover:not(:disabled) { opacity: 0.88; }
 
+/* ── analyse & optimise button ──────────────────────────────── */
+.agent-analyse-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--tl-ink);
+  border-radius: 8px;
+  background: var(--tl-ink);
+  color: var(--tl-bg);
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.agent-analyse-btn:hover:not(:disabled) { opacity: 0.92; }
+.agent-analyse-btn:disabled { opacity: 0.7; cursor: wait; }
+
+.agent-analyse-icon { flex-shrink: 0; }
+
+.agent-analyse-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.agent-analyse-desc {
+  font-size: 11px;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.agent-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--tl-mono);
+  font-size: 10px;
+  color: var(--tl-text-4);
+  margin: 4px 0 8px;
+  text-transform: lowercase;
+}
+
+.agent-divider::before,
+.agent-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tl-line);
+}
+
+/* ── analysis results card ──────────────────────────────────── */
+.agent-analysis-card {
+  border: 1px solid var(--tl-line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.agent-analysis-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--tl-line-2);
+  font-family: var(--tl-mono);
+  font-size: 10.5px;
+  color: var(--tl-text-2);
+}
+
+.agent-analysis-body {
+  padding: 6px 0;
+}
+
+.agent-analysis-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--tl-text-2);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.agent-analysis-item::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.agent-analysis-item--health::before { background: var(--tl-warn); }
+.agent-analysis-item--risk::before { background: var(--tl-bad); }
+.agent-analysis-item--comms::before { background: var(--tl-good); }
+
 @media (max-width: 768px) {
   .agent-panel { width: 100%; }
 }

@@ -995,7 +995,7 @@ export default function ConsoleApp() {
         />
       )}
       {showAgent && (
-        <AgentPanel onClose={() => setShowAgent(false)} />
+        <AgentPanel onClose={() => setShowAgent(false)} onRefresh={fetchData} />
       )}
     </div>
   );
