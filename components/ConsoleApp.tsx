@@ -807,8 +807,18 @@ export default function ConsoleApp() {
         onImport={() => setShowIntegrationModal(true)}
         onSeed={async () => {
           setSeedingData(true);
-          const res = await fetch('/api/seed', { method: 'POST' });
-          if (res.ok) await fetchData();
+          try {
+            const res = await fetch('/api/seed', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+              await fetchData();
+              alert(`Created ${data.projects} projects, ${data.risks} risks, ${data.tasks} tasks`);
+            } else {
+              alert(`Seed failed: ${data.error || res.status}`);
+            }
+          } catch (err) {
+            alert(`Seed error: ${err}`);
+          }
           setSeedingData(false);
         }}
         seeding={seedingData}
