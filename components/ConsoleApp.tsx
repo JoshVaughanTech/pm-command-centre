@@ -507,6 +507,7 @@ export default function ConsoleApp() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showAgent, setShowAgent] = useState(false);
+  const [seedingData, setSeedingData] = useState(false);
 
   // ── fetch data ───────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -804,6 +805,13 @@ export default function ConsoleApp() {
         generatingMoves={generatingMoves}
         onWorkspaces={() => setShowWorkspaceModal(true)}
         onImport={() => setShowIntegrationModal(true)}
+        onSeed={async () => {
+          setSeedingData(true);
+          const res = await fetch('/api/seed', { method: 'POST' });
+          if (res.ok) await fetchData();
+          setSeedingData(false);
+        }}
+        seeding={seedingData}
         onCommandPalette={() => setShowCommandPalette(true)}
         onAgent={() => setShowAgent(true)}
         notifications={notifications}
@@ -947,7 +955,7 @@ export default function ConsoleApp() {
 function ConsoleTopBar({
   addOpen, onAdd, availablePanels, onAddPanel, onCloseAdd, onReset,
   theme, setTheme, onAddProject, onAddRisk, onSignOut, onGenerateMoves, generatingMoves,
-  onWorkspaces, onImport, onCommandPalette, onAgent, notifications, onMarkAllRead, userName, hasProjects, workspaceName,
+  onWorkspaces, onImport, onSeed, seeding, onCommandPalette, onAgent, notifications, onMarkAllRead, userName, hasProjects, workspaceName,
 }: {
   addOpen: boolean;
   onAdd: () => void;
@@ -964,6 +972,8 @@ function ConsoleTopBar({
   generatingMoves: boolean;
   onWorkspaces: () => void;
   onImport: () => void;
+  onSeed: () => void;
+  seeding: boolean;
   onCommandPalette: () => void;
   onAgent: () => void;
   notifications: Notification[];
@@ -1003,6 +1013,9 @@ function ConsoleTopBar({
         <button className="console-tbtn" onClick={onImport}>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M2 10h8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
           <span>import</span>
+        </button>
+        <button className="console-tbtn" onClick={onSeed} disabled={seeding}>
+          <span>{seeding ? 'loading...' : 'demo data'}</span>
         </button>
         {hasProjects && (
           <button className="console-tbtn" onClick={onGenerateMoves} disabled={generatingMoves}>
