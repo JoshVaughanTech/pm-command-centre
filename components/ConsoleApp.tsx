@@ -771,6 +771,10 @@ export default function ConsoleApp() {
           onImport={() => { setShowOnboarding(false); setShowIntegrationModal(true); }}
           onGenerateMoves={() => { setShowOnboarding(false); generateMoves(); }}
           onDismiss={() => { setShowOnboarding(false); window.localStorage.setItem('sntri.onboarding.dismissed', '1'); }}
+          onSeed={async () => {
+            const res = await fetch('/api/seed', { method: 'POST' });
+            if (res.ok) { await fetchData(); setShowOnboarding(false); window.localStorage.setItem('sntri.onboarding.dismissed', '1'); }
+          }}
         />
         {showProjectModal && (
           <ProjectModal project={editingProject} onSave={async (data) => { await handleSaveProject(data); setShowOnboarding(projects.length === 0); }} onClose={() => setShowProjectModal(false)} />

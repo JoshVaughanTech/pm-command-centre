@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 type OnboardingProps = {
   userName: string;
   hasProjects: boolean;
@@ -7,9 +9,18 @@ type OnboardingProps = {
   onImport: () => void;
   onGenerateMoves: () => void;
   onDismiss: () => void;
+  onSeed: () => Promise<void>;
 };
 
-export function Onboarding({ userName, hasProjects, onAddProject, onImport, onGenerateMoves, onDismiss }: OnboardingProps) {
+export function Onboarding({ userName, hasProjects, onAddProject, onImport, onGenerateMoves, onDismiss, onSeed }: OnboardingProps) {
+  const [seeding, setSeeding] = useState(false);
+
+  async function handleSeed() {
+    setSeeding(true);
+    await onSeed();
+    setSeeding(false);
+  }
+
   return (
     <div className="onboard">
       <div className="onboard-brand">
@@ -37,6 +48,15 @@ export function Onboarding({ userName, hasProjects, onAddProject, onImport, onGe
             <div className="onboard-step-desc">Connect Smartsheet, Asana, Monday.com, or upload a CSV</div>
           </div>
         </button>
+        {!hasProjects && (
+          <button className="onboard-step" onClick={handleSeed} disabled={seeding}>
+            <span className="onboard-step-num">?</span>
+            <div className="onboard-step-text">
+              <div className="onboard-step-title">{seeding ? 'Loading demo data...' : 'Load demo data'}</div>
+              <div className="onboard-step-desc">Populate with 6 sample projects, risks, tasks, time entries, and financials</div>
+            </div>
+          </button>
+        )}
         {hasProjects && (
           <button className="onboard-step" onClick={onGenerateMoves}>
             <span className="onboard-step-num">3</span>
