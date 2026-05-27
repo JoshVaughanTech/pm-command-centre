@@ -64,22 +64,12 @@ const DEFAULT_LAYOUT: LayoutItem[] = [
   { id: 'comms', w: 12 },
 ];
 
-// ── Inline Bar ─────────────────────────────────────────────────────────────
-function CPBar({ v }: { v: number }) {
-  const cls = v < 50 ? 'bad' : v < 75 ? 'warn' : 'good';
-  return (
-    <span className="cp-inlinebar">
-      <span className={`cp-inlinebar-fill cp-inlinebar-fill--${cls}`} style={{ width: `${v}%` }} />
-    </span>
-  );
-}
-
 const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
   daybook: {
     title: 'Today',
     defaultW: 12,
     allowedW: [12],
-    Component: function DaybookPanel({ projects, risks, portfolio }) {
+    Component: function DaybookPanel({ projects, risks }) {
       const now = new Date();
       const dayName = getDayName(now);
       const { day, month, year } = getDateDisplay(now);
@@ -98,71 +88,49 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
       }
 
       return (
-        <div className="cp-daybook">
-          <div className="cp-daybook-l">
-            <div className="cp-daybook-eyebrow">{dayName}</div>
-            <h1 className="cp-daybook-title">
-              {day} {month}<span className="cp-daybook-year">, {year}</span>
-            </h1>
-            <p className="cp-daybook-lede">{lede}</p>
+        <div className="db-compact">
+          <div className="db-date">
+            <div className="db-date-day">{day}</div>
+            <div className="db-date-month">{dayName} {month} {year}</div>
           </div>
-          <div className="cp-daybook-r">
-            <div className="cp-ledger">
-              <div className="cp-ledger-row">
-                <span className="cp-ledger-num">{portfolio.active}</span>
-                <span className="cp-ledger-lbl">active projects</span>
-              </div>
-              <div className="cp-ledger-row">
-                <span className="cp-ledger-num">
-                  {portfolio.health}<span className="cp-ledger-unit">%</span>
-                </span>
-                <span className="cp-ledger-lbl">portfolio health</span>
-              </div>
-              <div className="cp-ledger-row cp-ledger-row--warn">
-                <span className="cp-ledger-num">
-                  {portfolio.risksHigh}<span className="cp-ledger-unit">/{portfolio.risksOpen}</span>
-                </span>
-                <span className="cp-ledger-lbl">high / open risks</span>
-              </div>
-              <div className="cp-ledger-row">
-                <span className="cp-ledger-num">
-                  {portfolio.updatesDue}
-                </span>
-                <span className="cp-ledger-lbl">comms overdue</span>
-              </div>
-            </div>
-          </div>
+          <div className="db-lede">{lede}</div>
         </div>
       );
     },
   },
   metrics: {
-    title: 'Portfolio metrics',
+    title: 'Portfolio',
     defaultW: 12,
     allowedW: [12, 8, 6],
     Component: function MetricsPanel({ portfolio }) {
-      const cells = [
-        { lbl: 'portfolio.health', val: portfolio.health, suf: '%', spark: [portfolio.health] },
-        { lbl: 'projects.active', val: portfolio.active, suf: '', spark: [portfolio.active] },
-        { lbl: 'risks.open', val: portfolio.risksOpen, suf: '', spark: [portfolio.risksOpen], state: portfolio.risksOpen > 0 ? 'warn' : '' },
-        { lbl: 'risks.high', val: portfolio.risksHigh, suf: '', spark: [portfolio.risksHigh], state: portfolio.risksHigh > 0 ? 'bad' : '' },
-        { lbl: 'comms.overdue', val: portfolio.updatesDue, suf: '', spark: [portfolio.updatesDue] },
-        { lbl: 'ai.hours_saved', val: portfolio.hoursSaved, suf: 'h', spark: [portfolio.hoursSaved], state: 'good' },
-      ];
+      const healthColor = portfolio.health >= 75 ? 'var(--tl-good)' : portfolio.health >= 50 ? 'var(--tl-warn)' : 'var(--tl-bad)';
+      const circumference = 2 * Math.PI * 18;
+      const healthOffset = circumference - (portfolio.health / 100) * circumference;
 
       return (
-        <div className="cp-strip">
-          {cells.map((cell) => (
-            <div key={cell.lbl} className={`cp-stripcell ${cell.state ? `cp-stripcell--${cell.state}` : ''}`}>
-              <div className="cp-stripcell-lbl">{cell.lbl}</div>
-              <div className="cp-stripcell-row">
-                <div className="cp-stripcell-val">
-                  {cell.val}
-                  {cell.suf && <span className="cp-stripcell-suf">{cell.suf}</span>}
-                </div>
-              </div>
+        <div className="vm-grid">
+          <div className="vm-cell">
+            <div className="vm-ring">
+              <svg width="48" height="48" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="18" fill="none" stroke="var(--tl-line-2)" strokeWidth="3" />
+                <circle cx="24" cy="24" r="18" fill="none" stroke={healthColor} strokeWidth="3" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={healthOffset} />
+              </svg>
+              <div className="vm-ring-val" style={{ color: healthColor }}>{portfolio.health}</div>
             </div>
-          ))}
+            <div className="vm-lbl">health</div>
+          </div>
+          <div className="vm-cell">
+            <div className="vm-val">{portfolio.active}</div>
+            <div className="vm-lbl">projects</div>
+          </div>
+          <div className="vm-cell">
+            <div className="vm-val" style={{ color: portfolio.risksHigh > 0 ? 'var(--tl-bad)' : undefined }}>{portfolio.risksHigh}<span className="vm-val-unit">/{portfolio.risksOpen}</span></div>
+            <div className="vm-lbl">high / risks</div>
+          </div>
+          <div className="vm-cell">
+            <div className="vm-val" style={{ color: portfolio.updatesDue > 0 ? 'var(--tl-warn)' : undefined }}>{portfolio.updatesDue}</div>
+            <div className="vm-lbl">comms due</div>
+          </div>
         </div>
       );
     },
@@ -177,25 +145,17 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
         return <div className="cp-empty">Add projects to see priority moves.</div>;
       }
       return (
-        <ol className="cp-moves">
+        <ol className="cm-list">
           {sorted.map((project, index) => (
-            <li key={project.id} className="cp-move">
-              <div className="cp-move-num">{String(index + 1).padStart(2, '0')}</div>
-              <div className="cp-move-body">
-                <div className="cp-move-meta">
+            <li key={project.id} className="cm-item">
+              <div className="cm-num">{index + 1}</div>
+              <div className="cm-body">
+                <div className="cm-meta">
                   <span className={`cp-pill cp-pill--${project.risk.toLowerCase()}`}>{project.risk}</span>
-                  <span className="cp-move-code">{project.code}</span>
-                  <span className="cp-mid-dot" />
+                  <span>{project.code}</span>
                   <span>{project.client}</span>
-                  {project.nextWhen && (
-                    <>
-                      <span className="cp-mid-dot" />
-                      <span className="cp-move-when">{project.nextWhen}</span>
-                    </>
-                  )}
                 </div>
-                <div className="cp-move-h">{project.move || project.next || `Update ${project.name}`}</div>
-                <div className="cp-move-p">{project.moveBody || `Health is at ${project.health}%. Review and update this project.`}</div>
+                <div className="cm-title">{project.move || project.next || `Review ${project.code}`}</div>
               </div>
             </li>
           ))}
@@ -205,16 +165,12 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
   },
   projects: {
     title: 'Projects',
-    defaultW: 8,
+    defaultW: 12,
     allowedW: [12, 8],
-    Component: function ProjectsPanel({ projects, risks, pinnedProjectId, onPin, onAddProject, onEditProject }) {
-      const [sortKey, setSortKey] = useState<'health' | 'comms'>('health');
+    Component: function ProjectsPanel({ projects, risks, pinnedProjectId, onPin, onAddProject, onViewProject }) {
       const sorted = useMemo(() => {
-        return [...projects].sort((a, b) => {
-          if (sortKey === 'health') return a.health - b.health;
-          return a.comms - b.comms;
-        });
-      }, [projects, sortKey]);
+        return [...projects].sort((a, b) => a.health - b.health);
+      }, [projects]);
 
       if (projects.length === 0) {
         return (
@@ -226,75 +182,42 @@ const PANEL_CATALOG: Record<PanelId, PanelDefinition> = {
       }
 
       return (
-        <table className="cp-table">
-          <thead>
-            <tr>
-              <th className="cp-th-tight">&middot;</th>
-              <th>code</th>
-              <th>project</th>
-              <th>client</th>
-              <th>stage</th>
-              <th className={`cp-th-num ${sortKey === 'health' ? 'is-sorted' : ''}`} onClick={() => setSortKey('health')}>
-                health &darr;
-              </th>
-              <th className="cp-th-num">budget</th>
-              <th className="cp-th-num">schedule</th>
-              <th className={`cp-th-num ${sortKey === 'comms' ? 'is-sorted' : ''}`} onClick={() => setSortKey('comms')}>
-                comms
-              </th>
-              <th className="cp-th-num">risks</th>
-              <th>next</th>
-              <th className="cp-th-tight"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((project) => {
-              const riskCount = risks.filter((r) => r.project === project.code).length;
-              const riskHigh = risks.filter((r) => r.project === project.code && r.severity === 'high').length;
+        <div className="pc-grid">
+          {sorted.map((project) => {
+            const riskCount = risks.filter((r) => r.project === project.code).length;
+            const healthCls = project.health < 50 ? 'bad' : project.health < 75 ? 'warn' : 'good';
 
-              return (
-                <tr
-                  key={project.id}
-                  onClick={() => onPin?.(project.id)}
-                  className={project.id === pinnedProjectId ? 'is-sel' : ''}
-                >
-                  <td><span className={`cp-rdot cp-rdot--${project.risk.toLowerCase()}`} /></td>
-                  <td className="cp-mono">{project.code}</td>
-                  <td className="cp-td-name">{project.name}</td>
-                  <td>{project.client}</td>
-                  <td><span className="cp-stage">{project.stage.toLowerCase()}</span></td>
-                  <td className="cp-td-num">
-                    <span className="cp-tnum">{project.health}</span>
-                    <CPBar v={project.health} />
-                  </td>
-                  <td className={`cp-td-num cp-state--${project.budgetState}`}>{project.budget}</td>
-                  <td className={`cp-td-num cp-state--${project.scheduleState}`}>{project.schedule}</td>
-                  <td className="cp-td-num">
-                    <span className="cp-tnum">{project.comms}</span>
-                    <CPBar v={project.comms} />
-                  </td>
-                  <td className="cp-td-num">
-                    {riskHigh > 0 && <span className="cp-rchip cp-rchip--high">{riskHigh}H</span>}
-                    <span className="cp-rchip">{riskCount}</span>
-                  </td>
-                  <td className="cp-td-next">
-                    {project.nextWhen && <span className={`cp-next-when ${project.nextWhen === 'Overdue' ? 'cp-next-when--bad' : ''}`}>{project.nextWhen}</span>}
-                    <span className="cp-next-what">{project.next}</span>
-                  </td>
-                  <td>
-                    <button
-                      className="console-panel-btn"
-                      title="Edit project"
-                      onClick={(e) => { e.stopPropagation(); onEditProject?.(project.id); }}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M7.5 1.5l1 1-5.5 5.5H2V7z" stroke="currentColor" strokeWidth="1" /></svg>
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+            return (
+              <div
+                key={project.id}
+                className={`pc-card pc-card--${project.risk.toLowerCase()} ${project.id === pinnedProjectId ? 'is-sel' : ''}`}
+                onClick={() => onPin?.(project.id)}
+                onDoubleClick={() => onViewProject?.(project.id)}
+              >
+                <div className="pc-top">
+                  <span className="pc-code">{project.code}</span>
+                  <span className={`pc-health cp-state--${healthCls}`}>{project.health}%</span>
+                </div>
+                <div className="pc-name">{project.name}</div>
+                <div className="pc-client">{project.client}</div>
+                <div className="pc-bar-wrap">
+                  <div className={`pc-bar-fill pc-bar-fill--${healthCls}`} style={{ width: `${project.health}%` }} />
+                </div>
+                <div className="pc-row">
+                  <span className="pc-tag">{project.stage.toLowerCase()}</span>
+                  <span className={`cp-state--${project.scheduleState}`}>{project.schedule}</span>
+                  {riskCount > 0 && <span className="cp-state--bad">{riskCount} risk{riskCount > 1 ? 's' : ''}</span>}
+                </div>
+                {(project.move || project.next) && (
+                  <div className="pc-action">
+                    <span className="pc-action-arrow">&rarr;</span>
+                    <span>{project.move || project.next}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       );
     },
   },
