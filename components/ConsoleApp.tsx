@@ -1014,9 +1014,6 @@ function ConsoleTopBar({
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M2 10h8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
           <span>import</span>
         </button>
-        <button className="console-tbtn" onClick={onSeed} disabled={seeding}>
-          <span>{seeding ? 'loading...' : 'demo data'}</span>
-        </button>
         {hasProjects && (
           <button className="console-tbtn" onClick={onGenerateMoves} disabled={generatingMoves}>
             {TLIcon.spark(11)}<span>{generatingMoves ? 'generating...' : 'AI moves'}</span>
@@ -1027,6 +1024,9 @@ function ConsoleTopBar({
         </button>
       </div>
       <div className="console-top-r">
+        <button className="console-tbtn" onClick={onSeed} disabled={seeding}>
+          <span>{seeding ? 'loading...' : 'demo data'}</span>
+        </button>
         <div className="console-add-wrap">
           <button className={`console-tbtn ${addOpen ? 'is-on' : ''}`} onClick={onAdd} disabled={availablePanels.length === 0}>
             <span>{TLIcon.plus(11)}</span>
